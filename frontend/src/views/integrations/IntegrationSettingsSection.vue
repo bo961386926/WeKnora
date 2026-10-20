@@ -6,15 +6,7 @@
           <h2>{{ $t('agentEditor.im.title') }}</h2>
           <p class="section-description">
             {{ $t('agentEditor.im.description') }}
-            <a
-              :href="docsUrl('imIntegration')"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="doc-link"
-            >
-              {{ $t('agentEditor.im.docLink') }}
-              <t-icon name="link" class="link-icon" />
-            </a>
+            
           </p>
         </div>
         <IMChannelPanel v-model:filter-agent-id="filterAgentId" />

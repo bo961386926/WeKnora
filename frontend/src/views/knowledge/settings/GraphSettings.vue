@@ -9,16 +9,6 @@
       <div class="graph-disabled-text">
         <p>{{ t('graphSettings.disabledWarning') }}</p>
       </div>
-      <t-button
-        v-if="!embedded"
-        size="small"
-        theme="primary"
-        variant="outline"
-        @click="handleOpenGraphGuide"
-      >
-        <template #icon><t-icon name="help-circle" /></template>
-        {{ t('graphSettings.howToEnable') }}
-      </t-button>
     </div>
 
     <div v-if="isGraphDatabaseEnabled" class="settings-group">

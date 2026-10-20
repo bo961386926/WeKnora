@@ -595,10 +595,7 @@
               <p v-if="specCompatError" class="form-desc form-desc--error">{{ $t('model.editor.advanced.compat.invalid') }}: {{ specCompatError }}</p>
               <p v-else class="form-desc">
                 {{ $t('model.editor.advanced.compat.desc') }}
-                <a :href="COMPAT_DOC_URL" target="_blank" rel="noopener noreferrer" class="compat-doc-link">
-                  {{ $t('model.editor.advanced.compat.docLink') }}
-                  <t-icon name="jump" size="12px" />
-                </a>
+                
               </p>
             </div>
           </template>
