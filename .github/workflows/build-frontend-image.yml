@@ -28,9 +28,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve image tag
+      - name: Resolve image tags
         id: tag
-        run: echo "name=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "name=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/build-push-action@v6
         with:
@@ -42,6 +44,6 @@ jobs:
             VITE_FRONTEND_COMMIT=${{ github.sha }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/weknora-ui:${{ steps.tag.outputs.name }}
-            ghcr.io/${{ github.repository_owner }}/weknora-ui:sha-${GITHUB_SHA::7}
+            ghcr.io/${{ github.repository_owner }}/weknora-ui:sha-${{ steps.tag.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
