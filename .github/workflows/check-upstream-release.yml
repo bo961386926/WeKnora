@@ -1,0 +1,71 @@
+name: Check upstream releases
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compare with upstream tags
+        run: |
+          git remote add upstream https://github.com/Tencent/WeKnora.git
+          git fetch --tags --force upstream
+
+          newest=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          base=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo '(none)')
+
+          patch=needed
+          if git show "$newest:frontend/src/views/knowledge/components/KbFolderTree.vue" 2>/dev/null | grep -q 'row.totalCount'; then
+            patch=already-upstream
+          fi
+
+          newer=false
+          if [ "$newest" != "$base" ] && [ "$(printf '%s\n%s\n' "$base" "$newest" | sort -V | tail -1)" = "$newest" ]; then
+            newer=true
+          fi
+
+          {
+            echo "## Upstream release check"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Branch base | \`$base\` |"
+            echo "| Newest upstream | \`$newest\` |"
+            echo "| Newer release available | **$newer** |"
+            echo "| Folder-count patch | \`$patch\` |"
+            echo
+            if [ "$newer" = "true" ]; then
+              echo "### Upgrade steps"
+              echo
+              echo "1. \`git fetch upstream --tags\`"
+              echo "2. \`git rebase $newest\`"
+              if [ "$patch" = "already-upstream" ]; then
+                echo "3. Upstream already renders \`row.totalCount\`; drop the local patch when it conflicts."
+              else
+                echo "3. Re-apply the \`row.totalCount\` patch after the rebase."
+              fi
+              echo "4. \`git push\` — CI rebuilds the images."
+            else
+              echo "No action needed."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Print result
+        run: |
+          newest=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          base=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo '(none)')
+          echo "branch base: ${base}"
+          echo "newest upstream: ${newest}"
+          if [ "$newest" = "$base" ]; then
+            echo "already up to date"
+          else
+            echo "newer upstream release available: ${newest}"
+          fi
