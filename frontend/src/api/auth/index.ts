@@ -227,6 +227,21 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 }
 
 /**
+ * 用 SaaS 签发的短时令牌换取 WeKnora 登录态
+ */
+export async function ssoExchange(token: string): Promise<LoginResponse> {
+  try {
+    const response = await post('/api/v1/auth/sso/exchange', { token })
+    return response as unknown as LoginResponse
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'SSO login failed'
+    }
+  }
+}
+
+/**
  * 获取 OIDC 登录跳转地址
  */
 export async function getOIDCAuthorizationURL(redirectURI: string): Promise<OIDCAuthURLResponse> {

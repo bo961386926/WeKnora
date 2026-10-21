@@ -54,6 +54,14 @@ const router = createRouter({
       component: () => import("../views/auth/Login.vue"),
       meta: { requiresAuth: false, requiresInit: false }
     },
+    {
+      // SaaS single sign-on landing page. Exchanges the one-time token in the
+      // query string for a WeKnora session, then forwards into the app.
+      path: "/sso",
+      name: "ssoLogin",
+      component: () => import("../views/auth/SSOLogin.vue"),
+      meta: { requiresAuth: false, requiresInit: false }
+    },
     // Embed chat is a separate entry (embed.html + embed-main.ts), not this SPA.
     {
       path: "/register",

@@ -214,6 +214,9 @@ func RegisterAuthRoutes(r *gin.RouterGroup, handler *handler.AuthHandler, g *rba
 	r.POST("/auth/register-by-invite", publicAuthRL, handler.RegisterByInvite)
 	r.POST("/auth/invitations/lookup", publicAuthRL, handler.LookupInvitationByToken)
 	r.POST("/auth/login", handler.Login)
+	// Exchange a SaaS-signed, single-use token for a WeKnora session. Public
+	// but IP rate-limited like the other unauthenticated auth surfaces.
+	r.POST("/auth/sso/exchange", publicAuthRL, handler.SSOExchange)
 	r.POST("/auth/auto-setup", handler.AutoSetup)
 	r.GET("/auth/config", handler.GetAuthConfig)
 	r.POST("/auth/switch-tenant", handler.SwitchTenant)

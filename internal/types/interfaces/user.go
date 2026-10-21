@@ -18,6 +18,10 @@ type UserService interface {
 	// provisioning is the default tenant mode for a newly auto-created user
 	// (resolved by the caller from auth.default_tenant_mode).
 	LoginWithOIDC(ctx context.Context, code, redirectURI string, provisioning types.TenantProvisioningMode) (*types.OIDCCallbackResponse, error)
+	// LoginWithSSO verifies a token signed by the SaaS platform, provisions the
+	// user on first sight, ensures membership in the token's workspace and
+	// returns the same response shape as a password login.
+	LoginWithSSO(ctx context.Context, token string) (*types.LoginResponse, error)
 	// GetUserByID gets a user by ID
 	GetUserByID(ctx context.Context, id string) (*types.User, error)
 	// GetUsersByIDs batch-fetches users by id, returning a map keyed by
