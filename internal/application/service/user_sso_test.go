@@ -102,6 +102,15 @@ func TestParseSSOTokenRejectsBadSignature(t *testing.T) {
 	}
 }
 
+func TestParseSSOTokenRejectsLongLived(t *testing.T) {
+	claims := validSSOClaims()
+	claims["iat"] = time.Now().Add(-time.Hour).Unix()
+	claims["exp"] = time.Now().Add(time.Hour).Unix()
+	if _, err := parseSSOToken(signSSOToken(t, claims), testSSOConfig()); !errors.Is(err, ErrSSOInvalidToken) {
+		t.Fatalf("expected ErrSSOInvalidToken, got %v", err)
+	}
+}
+
 func TestConsumeJTIRejectsReplay(t *testing.T) {
 	now := time.Now()
 	if !consumeJTI("replay-test", now) {

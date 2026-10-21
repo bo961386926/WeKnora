@@ -62,6 +62,11 @@ const persistLoginResponse = (response: any) => {
 
 onMounted(async () => {
   const token = String(route.query.token || '')
+  if (token) {
+    // Drop the one-time token from the address bar and history before making
+    // any request, so it is not left behind in the browser.
+    window.history.replaceState({}, '', '/sso')
+  }
   if (!token) {
     state.value = 'error'
     errorMessage.value = '缺少登录令牌，请从原系统重新进入。'

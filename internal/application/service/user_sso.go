@@ -113,6 +113,16 @@ func parseSSOToken(raw string, cfg *ssoConfig) (*ssoClaims, error) {
 	if exp, err := claims.GetExpirationTime(); err != nil || exp == nil {
 		return nil, ErrSSOInvalidToken
 	}
+	issuedAt, err := claims.GetIssuedAt()
+	if err != nil || issuedAt == nil {
+		return nil, ErrSSOInvalidToken
+	}
+	expiresAt, _ := claims.GetExpirationTime()
+	// Reject long-lived tokens outright: the exchange is only safe with a
+	// token that a leaked log cannot replay hours later.
+	if expiresAt.Time.Sub(issuedAt.Time) > 2*time.Minute {
+		return nil, ErrSSOInvalidToken
+	}
 
 	role := types.TenantRole(strings.TrimSpace(claimString(claims, "role")))
 	if role == "" {
