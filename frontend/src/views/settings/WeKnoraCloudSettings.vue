@@ -4,15 +4,6 @@
       <h2>{{ $t('settings.weknoraCloud.title') }}</h2>
       <p class="section-description">
         {{ $t('settings.weknoraCloud.description') }}
-        <a
-          class="doc-link"
-          href="https://developers.weixin.qq.com/doc/aispeech/knowledge/atomic_capability/atomic_interface.html"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ $t('settings.weknoraCloud.viewDocs') }}
-          <t-icon name="link" class="link-icon" />
-        </a>
       </p>
     </div>
 

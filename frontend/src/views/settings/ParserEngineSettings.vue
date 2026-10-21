@@ -118,16 +118,6 @@
       -->
       <template v-if="currentEngine" #subtitle>
         <span>{{ getEngineDisplayDesc(currentEngine.Name, currentEngine.Description) }}</span>
-        <a
-          v-if="engineDocLink(currentEngine.Name)"
-          :href="engineDocLink(currentEngine.Name)"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="doc-link doc-link--inline"
-        >
-          {{ engineDocLabel(currentEngine.Name) }}
-          <t-icon name="link" class="link-icon" />
-        </a>
       </template>
       <!--
         Footer-left slot: 测试连接按钮 + 状态文案 — 主操作栏沿底边对齐，

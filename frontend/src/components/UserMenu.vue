@@ -196,7 +196,6 @@ import { useRoleLabel, useHomeTenant } from '@/composables/useRoleLabel'
 import { getRootZoom, rectToCssPx, cssViewportSize } from '@/utils/zoom'
 import { openNewUserGuide } from '@/config/contextualGuides'
 import { SETTINGS_MANAGEMENT_SHORTCUT_MIN_ROLE } from '@/config/settingsAccess'
-import { docsUrl } from '@/utils/docsUrl'
 const { t } = useI18n()
 
 const router = useRouter()
@@ -474,16 +473,7 @@ const reopenGuide = () => {
   openNewUserGuide()
 }
 
-const openDocs = () => {
-  menuVisible.value = false
-  window.open(docsUrl('home'), '_blank')
-}
 
-// 打开 GitHub
-const openGithub = () => {
-  menuVisible.value = false
-  window.open('https://github.com/Tencent/WeKnora', '_blank')
-}
 
 // 注销
 const handleLogout = async () => {

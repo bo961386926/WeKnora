@@ -7,7 +7,7 @@ export const CLAWHUB_SKILL_URL = 'https://clawhub.ai/lyingbug/weknora'
 
 export type IntegrationTab = 'im' | 'embed' | 'api' | 'mcpserver' | 'cli' | 'chrome' | 'claw'
 
-export const INTEGRATION_TABS: IntegrationTab[] = ['im', 'embed', 'api', 'mcpserver', 'cli', 'chrome', 'claw']
+export const INTEGRATION_TABS: IntegrationTab[] = ['im', 'embed', 'api', 'mcpserver', 'cli']
 
 /** Aligns with Settings.vue SECTION_MIN_ROLE.api and router.go g.Owner() on /api-principal-config. */
 export type IntegrationTabRole = 'viewer' | 'contributor' | 'admin' | 'owner'
@@ -37,6 +37,4 @@ export const INTEGRATION_PREVIEW_ITEMS: Array<{
   { key: 'api', icon: { type: 'icon', name: 'secured' } },
   { key: 'mcpserver', icon: { type: 'icon', name: 'tools' } },
   { key: 'cli', icon: { type: 'icon', name: 'code' } },
-  { key: 'chrome', icon: { type: 'icon', name: 'extension' } },
-  { key: 'claw', icon: { type: 'emoji', value: '🦞' } },
 ]
