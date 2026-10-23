@@ -477,6 +477,67 @@ sequenceDiagram
     W-->>B: LoginResponse {user, memberships, token, refresh_token, is_new_user}
 ```
 
+### SaaS 单点登录（短时令牌交换） {#_5b-saas-单点登录}
+
+当 SaaS 平台是身份与权限的唯一事实源时，用短时令牌交换代替 OIDC 授权码流程：SaaS 后端签发一次性 JWT，浏览器带它进入 WeKnora，后端校验后签发本地会话。首次登录自动开户并按令牌中的角色加入工作空间；已有成员的角色随令牌同步。
+
+**配置**（`WEKNORA_SSO_ENABLED=true` 时启用，与 OIDC 可同时开启）：
+
+| 环境变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `WEKNORA_SSO_ENABLED` | `false` | 总开关；只配密钥不开此开关不生效 |
+| `WEKNORA_SSO_SECRET` | 空 | 与 SaaS 签发端共享的 HS256 密钥，至少 16 个字符 |
+| `WEKNORA_SSO_ISSUER` | 空 | 预期 `iss`；留空则不校验签发方 |
+| `WEKNORA_SSO_AUDIENCE` | `weknora` | 预期 `aud` |
+| `WEKNORA_SSO_CLOCK_SKEW_SECONDS` | `30` | 时间校验允许的时钟偏移（0–300） |
+
+**令牌契约**（HS256，有效期上限固定为 2 分钟）：
+
+```json
+{
+  "iss": "qh-saas", "aud": "weknora",
+  "sub": "SaaS 用户唯一 ID",
+  "email": "user@example.com", "name": "显示名",
+  "tenant": 10002,
+  "role": "viewer",            // viewer | contributor | admin，owner 会被拒绝
+  "jti": "一次性 UUID",         // 服务端做防重放
+  "iat": 1792547525, "exp": 1792547585
+}
+```
+
+`tenant` 必须是 WeKnora 数字空间 ID；SaaS 侧保存“租户组 → 空间 ID”的映射。
+
+**流程**：
+
+1. SaaS 后端签发令牌，跳转 `<前端地址>/sso?token=<JWT>`；
+2. 前端读取后立刻把 token 从地址栏移除（`history.replaceState`），调用 `POST /api/v1/auth/sso/exchange`，body `{"token": "..."}`；
+3. 后端校验签名 → `aud` → `iss` → 过期（含时钟偏移）→ 2 分钟时长上限 → `sub`/`email`/`jti`/`tenant` 必需 → 角色白名单 → `jti` 防重放；
+4. 按 email 查用户（不存在则以 tenantless 方式自动开户）→ 确保空间成员关系 → 签发与密码登录相同的本地令牌对。
+
+**成员与角色同步**：
+
+| 场景 | 行为 |
+| --- | --- |
+| 成员不存在 | 按令牌 `role` 加入空间 |
+| 已是成员且角色不同 | 更新为令牌中的角色 |
+| 已是成员且角色相同 | 不做写操作 |
+| 成员是空间 Owner | 保留 Owner，不降级（SSO 令牌里的 `owner` 也会被拒绝） |
+
+**错误语义**：
+
+| 状态码 | 场景 |
+| --- | --- |
+| 400 | 请求体缺少 `token` |
+| 401 | 签名/受众/签发方/过期/时长不合法，`jti` 已被使用，或缺少必需声明 |
+| 403 | 空间不存在、账号已停用、角色不在允许范围 |
+| 404 | 未启用 SSO |
+
+**部署注意**：
+
+- 防重放缓存当前是进程内存（保留 10 分钟）。多副本部署必须换成 Redis，否则同一令牌可能在不同副本各用一次。
+- 令牌一次性且有效期很短，不要放进日志、监控或浏览器历史；前端已在读取后立即清除地址栏参数。
+- 上线后建议关闭公开注册（系统设置 → `auth.registration_mode=invite_register`），让所有用户经 SaaS 进入。
+
 ### 配置速查 {#_9-配置速查}
 
 | 配置项 | 取值 | 默认 | 作用 |
@@ -487,6 +548,7 @@ sequenceDiagram
 | `JWT_SECRET`（环境变量） | 任意字符串 | 随机 32 字节 | JWT HMAC 密钥 |
 | `SYSTEM_AES_KEY`（环境变量） | AES 密钥 | 未设置 | API Key 明文落库加密 |
 | `oidc.*` | 见 [配置](#_5-1-配置) | 关闭 | OIDC 单点登录 |
+| `WEKNORA_SSO_*` | 见 [SaaS 单点登录](#_5b-saas-单点登录) | 关闭 | 短时令牌 SSO（`WEKNORA_SSO_ENABLED=true` 启用） |
 | `frontend_base_url` / `FRONTEND_BASE_URL` | URL | 相对路径 | 邀请链接注册页地址 |
 | `Tenant.StorageQuota` | 字节 | 10737418240（10GB） | 租户存储配额 |
 
