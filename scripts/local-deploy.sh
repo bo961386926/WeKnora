@@ -15,6 +15,8 @@
 #   UI_IMAGE      remote ui tag       (default ghcr.io/bo961386926/weknora-ui:company-v0.8.3)
 #   PLATFORM      target platform     (default linux/amd64)
 #   WITH_ANYDOC   1 to build anydoc   (default 0 for faster builds)
+#   APK_MIRROR_ARG  Debian mirror     (default mirrors.aliyun.com)
+#   GOPROXY_ARG     Go module proxy   (default https://goproxy.cn,direct)
 #   PUBLIC_URL    health check origin (default https://kb.qh-cloud.com)
 #   SKIP_BUILD=1  reuse local images tagged with <version>
 
@@ -29,6 +31,8 @@ APP_TAG="${APP_IMAGE:-ghcr.io/bo961386926/weknora-app:company-v0.8.3}"
 UI_TAG="${UI_IMAGE:-ghcr.io/bo961386926/weknora-ui:company-v0.8.3}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 WITH_ANYDOC="${WITH_ANYDOC:-0}"
+APK_MIRROR_ARG="${APK_MIRROR_ARG:-mirrors.aliyun.com}"
+GOPROXY_ARG="${GOPROXY_ARG:-https://goproxy.cn,direct}"
 PUBLIC_URL="${PUBLIC_URL:-https://kb.qh-cloud.com}"
 VERSION="${1:-$(git rev-parse --short HEAD)}"
 
@@ -37,7 +41,10 @@ echo "[local-deploy] version=${VERSION} platform=${PLATFORM} host=${HOST}"
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   echo "[local-deploy] building app image"
   docker buildx build --platform "$PLATFORM" --load \
-    -f docker/Dockerfile.app --build-arg "WITH_ANYDOC=${WITH_ANYDOC}" \
+    -f docker/Dockerfile.app \
+    --build-arg "WITH_ANYDOC=${WITH_ANYDOC}" \
+    --build-arg "APK_MIRROR_ARG=${APK_MIRROR_ARG}" \
+    --build-arg "GOPROXY_ARG=${GOPROXY_ARG}" \
     -t "weknora-app:${VERSION}" .
 
   echo "[local-deploy] building frontend image"

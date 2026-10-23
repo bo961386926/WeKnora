@@ -3,17 +3,16 @@ FROM --platform=$TARGETPLATFORM node:24-bookworm-slim@sha256:ba849c60be29959425b
 WORKDIR /build
 # Use the same optional Debian mirror as the Go builder and runtime stages.
 ARG APK_MIRROR_ARG
-# This base image has no CA certificates. Install them from the original HTTP
-# Debian source before swapping in a mirror: mirrors.tencent.com redirects
-# apt to HTTPS, and that handshake fails without a trust store.
+# Apply the optional mirror before the first apt-get update: some networks
+# cannot reach deb.debian.org from inside the Docker VM (502 from the CDN)
+# even though the host can. Prefer an HTTP mirror here; one that redirects
+# to HTTPS still needs CA certificates and should not be passed.
 RUN if [ -n "$APK_MIRROR_ARG" ]; then \
-        apt-get update && \
-        apt-get install -y --no-install-recommends ca-certificates && \
-        rm -rf /var/lib/apt/lists/* && \
         sed -i "s@deb.debian.org@${APK_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
     fi && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends git python3 ca-certificates curl build-essential cmake pkg-config && \
+    APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Pipeline-Depth=0" && \
+    apt-get $APT_OPTS update && \
+    apt-get $APT_OPTS install -y --no-install-recommends ca-certificates git python3 curl build-essential cmake pkg-config && \
     rm -rf /var/lib/apt/lists/*
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
 ENV PATH=/usr/local/cargo/bin:$PATH
@@ -43,8 +42,8 @@ ENV GOSUMDB=${GOSUMDB_ARG}
 RUN if [ -n "$APK_MIRROR_ARG" ]; then \
         sed -i "s@deb.debian.org@${APK_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
     fi && \
-    apt-get update && \
-    apt-get install -y git build-essential libsqlite3-dev curl
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Pipeline-Depth=0 update && \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Pipeline-Depth=0 install -y git build-essential libsqlite3-dev curl
 
 # Install migrate tool
 RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
@@ -110,17 +109,21 @@ COPY --from=browserskill /opt/weknora/browserskill /opt/weknora/browserskill
 # Create a non-root user first
 RUN useradd -m -s /bin/bash appuser
 
-# First, install ca-certificates without mirror to ensure HTTPS works
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+# Apply the optional mirror before the first update (see the browserskill
+# stage note), then install ca-certificates for the HTTPS downloads below.
+RUN if [ -n "$APK_MIRROR_ARG" ]; then \
+        sed -i "s@deb.debian.org@${APK_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
+    fi && \
+    apt-get -o Acquire::Retries=5 update && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Then switch to mirror if specified and install other packages
 RUN if [ -n "$APK_MIRROR_ARG" ]; then \
         sed -i "s@deb.debian.org@${APK_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
     fi && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Pipeline-Depth=0 update && \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Pipeline-Depth=0 install -y --no-install-recommends \
         build-essential postgresql-client default-mysql-client tzdata sed curl bash vim wget \
         libsqlite3-0 \
         python3 python3-pip python3-dev libffi-dev libssl-dev \
