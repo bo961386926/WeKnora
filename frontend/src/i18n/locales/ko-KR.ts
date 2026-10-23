@@ -3512,6 +3512,12 @@ export default {
           registration_mode: '가입 모드입니다. 공개 가입은 누구나 계정을 만들 수 있고, 초대 가입은 유효한 초대 링크가 필요합니다. 가입 금지 상태에서도 기존 계정은 초대를 수락할 수 있습니다. 저장 즉시 적용됩니다.',
           default_tenant_mode: '공개 가입 후 공간 초기화 정책입니다. create_personal은 개인 공간을 만들고 Owner를 부여하며, tenantless는 초대 수락 또는 직접 공간 생성 전까지 계정만 만듭니다.',
           complex_password_enabled: '복잡한 비밀번호를 사용할지 여부입니다. 활성화하면 비밀번호에 대문자, 소문자, 숫자 및 특수 문자가 포함되어야 합니다. 변경 사항은 즉시 적용되며, 새로 가입하는 사용자 또는 비밀번호를 새로 변경하거나 재설정하는 경우에만 적용됩니다. 특수 문자는 다음을 포함합니다: {specialChars}'
+        },
+        sso: {
+          enabled: 'SaaS 싱글 사인온 총 스위치입니다. 활성화하면 SaaS에서 발급한 단기 토큰을 /sso에서 로컬 세션으로 교환할 수 있습니다. 공유 비밀은 WEKNORA_SSO_SECRET 환경 변수로 제공되며 여기서는 설정하지 않습니다. 저장 즉시 적용됩니다.',
+          issuer: '예상 토큰 발급자(iss)입니다. 비워 두면 발급자를 검증하지 않습니다. SaaS 발급 측과 일치해야 합니다.',
+          audience: '예상 토큰 대상(aud)입니다. 기본값은 weknora이며 SaaS 발급 측과 일치해야 합니다.',
+          clock_skew_seconds: '토큰 검증 시 허용되는 시계 오차(0–300초)입니다. 토큰 유효 기간은 최대 2분입니다.'
         }
       },
       keyLabels: {
@@ -3543,6 +3549,12 @@ export default {
           registration_mode: '가입 모드',
           default_tenant_mode: '기본 공간 프로비저닝',
           complex_password_enabled: '복잡한 비밀번호 사용'
+        },
+        sso: {
+          enabled: 'SaaS 싱글 사인온 사용',
+          issuer: '토큰 발급자 (iss)',
+          audience: '토큰 대상 (aud)',
+          clock_skew_seconds: '시계 오차(초)'
         }
       },
       runtime: {

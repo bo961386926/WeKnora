@@ -3514,6 +3514,12 @@ export default {
           registration_mode: '註冊模式。開放註冊允許任何人建立帳號；僅限邀請註冊要求有效邀請連結；禁止註冊不允許建立帳號，但已有帳號仍可接受邀請。儲存後立即生效。',
           default_tenant_mode: '公開註冊後的空間初始化策略。create_personal 會自動建立個人空間並授予 Owner；tenantless 僅建立帳戶，使用者需要接受邀請或主動建立空間。只影響之後註冊的使用者。',
           complex_password_enabled: '是否啟用複雜密碼。開啟後密碼必須包含大小寫字母、數字和特殊字符。修改後立即生效，只影響新註冊使用者或新密碼修改/重設操作。特殊字符包含：{specialChars}'
+        },
+        sso: {
+          enabled: 'SaaS 單一登入總開關。開啟後，SaaS 平台簽發的短時權杖可從 /sso 入口換取本機會話；共享密鑰由部署環境變數 WEKNORA_SSO_SECRET 提供，不在此處設定。儲存後立即生效。',
+          issuer: '權杖的簽發方（iss）。留空表示不驗證簽發方；必須與 SaaS 簽發端一致。',
+          audience: '權杖的受眾（aud），預設 weknora，必須與 SaaS 簽發端一致。',
+          clock_skew_seconds: '權杖時間驗證允許的時鐘偏移（0–300 秒）。權杖有效期上限固定為 2 分鐘。'
         }
       },
       keyLabels: {
@@ -3545,6 +3551,12 @@ export default {
           registration_mode: '註冊模式',
           default_tenant_mode: '註冊預設空間策略',
           complex_password_enabled: '啟用複雜密碼'
+        },
+        sso: {
+          enabled: '啟用 SaaS 單一登入',
+          issuer: '權杖簽發方 (iss)',
+          audience: '權杖受眾 (aud)',
+          clock_skew_seconds: '時鐘偏移（秒）'
         }
       },
       runtime: {

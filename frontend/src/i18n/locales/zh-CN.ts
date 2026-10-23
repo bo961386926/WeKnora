@@ -3514,6 +3514,12 @@ export default {
           registration_mode: '注册模式。开放注册允许任何人创建账号；仅限邀请注册要求有效邀请链接；禁止注册不允许创建账号，但已有账号仍可接受邀请。保存后立即生效。',
           default_tenant_mode: '公开注册后的空间初始化策略。create_personal 会自动创建个人空间并授予 Owner；tenantless 仅创建账户，用户需要接受邀请或主动创建空间。只影响之后注册的用户。',
           complex_password_enabled: '是否启用复杂密码。开启后密码必须包含大小写字母、数字和特殊字符。修改后立即生效，只影响新注册用户或新密码修改/重置操作。特殊字符包含：{specialChars}'
+        },
+        sso: {
+          enabled: 'SaaS 单点登录总开关。开启后，SaaS 平台签发的短时令牌可从 /sso 入口换取本地会话；共享密钥由部署环境变量 WEKNORA_SSO_SECRET 提供，不在此处配置。保存后立即生效。',
+          issuer: '令牌的签发方（iss）。留空表示不校验签发方；必须与 SaaS 签发端一致。',
+          audience: '令牌的受众（aud），默认 weknora，必须与 SaaS 签发端一致。',
+          clock_skew_seconds: '令牌时间校验允许的时钟偏移（0–300 秒）。令牌有效期上限固定为 2 分钟。'
         }
       },
       keyLabels: {
@@ -3545,6 +3551,12 @@ export default {
           registration_mode: '注册模式',
           default_tenant_mode: '注册默认空间策略',
           complex_password_enabled: '启用复杂密码'
+        },
+        sso: {
+          enabled: '启用 SaaS 单点登录',
+          issuer: '令牌签发方 (iss)',
+          audience: '令牌受众 (aud)',
+          clock_skew_seconds: '时钟偏移（秒）'
         }
       },
       runtime: {

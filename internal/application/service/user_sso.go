@@ -15,6 +15,7 @@ import (
 	apprepo "github.com/Tencent/WeKnora/internal/application/repository"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/Tencent/WeKnora/internal/types/interfaces"
 )
 
 // SSO errors surfaced by the handler as 401/403/404.
@@ -26,8 +27,9 @@ var (
 	ErrSSORoleNotAllowed = errors.New("sso role is not allowed")
 )
 
-// ssoConfig is read from the environment on every exchange so a secret
-// rotation only needs a container restart, and tests can drive it directly.
+// ssoConfig is resolved on every exchange (DB settings over env) so an
+// operator edit in the admin UI takes effect on the next login without a
+// restart. The shared secret remains environment-only.
 type ssoConfig struct {
 	Enabled   bool
 	Secret    string
@@ -45,21 +47,34 @@ var (
 	ssoSeen   = map[string]int64{}
 )
 
-func loadSSOConfig() (*ssoConfig, error) {
+// loadSSOConfig resolves the SSO settings. Precedence matches the rest of
+// the platform: database system settings > environment variables > defaults.
+// The shared secret is deliberately environment-only — it is never written
+// to the settings table or exposed through the admin UI.
+func loadSSOConfig(ctx context.Context, settings interfaces.SystemSettingService) (*ssoConfig, error) {
+	skewSeconds := int64(30)
+	if raw := strings.TrimSpace(os.Getenv("WEKNORA_SSO_CLOCK_SKEW_SECONDS")); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 0 && n <= 300 {
+			skewSeconds = int64(n)
+		}
+	}
+
 	cfg := &ssoConfig{
 		Enabled:   strings.EqualFold(strings.TrimSpace(os.Getenv("WEKNORA_SSO_ENABLED")), "true"),
 		Secret:    os.Getenv("WEKNORA_SSO_SECRET"),
 		Issuer:    strings.TrimSpace(os.Getenv("WEKNORA_SSO_ISSUER")),
 		Audience:  strings.TrimSpace(os.Getenv("WEKNORA_SSO_AUDIENCE")),
-		ClockSkew: 30 * time.Second,
+		ClockSkew: time.Duration(skewSeconds) * time.Second,
+	}
+	if settings != nil {
+		cfg.Enabled = settings.GetBool(ctx, "sso.enabled", "WEKNORA_SSO_ENABLED", cfg.Enabled)
+		cfg.Issuer = strings.TrimSpace(settings.GetString(ctx, "sso.issuer", "WEKNORA_SSO_ISSUER", cfg.Issuer))
+		cfg.Audience = strings.TrimSpace(settings.GetString(ctx, "sso.audience", "WEKNORA_SSO_AUDIENCE", cfg.Audience))
+		skewSeconds = settings.GetInt(ctx, "sso.clock_skew_seconds", "WEKNORA_SSO_CLOCK_SKEW_SECONDS", skewSeconds)
+		cfg.ClockSkew = time.Duration(skewSeconds) * time.Second
 	}
 	if cfg.Audience == "" {
 		cfg.Audience = "weknora"
-	}
-	if raw := strings.TrimSpace(os.Getenv("WEKNORA_SSO_CLOCK_SKEW_SECONDS")); raw != "" {
-		if n, err := strconv.Atoi(raw); err == nil && n >= 0 && n <= 300 {
-			cfg.ClockSkew = time.Duration(n) * time.Second
-		}
 	}
 	if !cfg.Enabled {
 		return cfg, nil
@@ -190,7 +205,7 @@ func consumeJTI(jti string, now time.Time) bool {
 // user on first sight, ensures workspace membership and returns the same
 // response shape as a password login.
 func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types.LoginResponse, error) {
-	cfg, err := loadSSOConfig()
+	cfg, err := loadSSOConfig(ctx, s.systemSettingSvc)
 	if err != nil {
 		return nil, err
 	}

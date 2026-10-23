@@ -4658,6 +4658,12 @@ export default {
           default_tenant_mode: 'Default workspace provisioning',
           complex_password_enabled: 'Require complex password'
         },
+        sso: {
+          enabled: 'Enable SaaS single sign-on',
+          issuer: 'Token issuer (iss)',
+          audience: 'Token audience (aud)',
+          clock_skew_seconds: 'Clock skew (seconds)'
+        },
         ssrf: {
           whitelist: 'SSRF protection allowlist'
         },
@@ -4688,6 +4694,12 @@ export default {
           registration_mode: 'Registration mode. Open registration allows anyone to create an account; invitation registration requires a valid invitation link; disabled registration prevents account creation while existing accounts can still accept invitations. Changes take effect immediately.',
           default_tenant_mode: 'Workspace provisioning after public registration. create_personal creates an Owner workspace; tenantless creates only the account until the user accepts an invitation or creates a workspace. Applies to new users only.',
           complex_password_enabled: 'Whether to require complex passwords. When enabled, passwords must contain uppercase and lowercase letters, numbers, and special characters. Changes take effect immediately and only apply to newly registered users or new password changes/resets. Special characters include {specialChars}'
+        },
+        sso: {
+          enabled: 'Master switch for SaaS single sign-on. When enabled, short-lived tokens issued by the SaaS platform can be exchanged for a local session at /sso. The shared secret comes from the WEKNORA_SSO_SECRET environment variable and is not configured here. Takes effect immediately.',
+          issuer: 'Expected token issuer (iss). Leave empty to skip issuer validation; must match the SaaS signer.',
+          audience: 'Expected token audience (aud), default weknora; must match the SaaS signer.',
+          clock_skew_seconds: 'Clock skew allowed during token validation (0-300 seconds). Token lifetime is capped at 2 minutes.'
         },
         ssrf: {
           whitelist: 'SSRF protection allowlist. Accepts entries such as example.com / *.foo.com / 10.0.0.0/8 / 2001:db8::1. Takes effect immediately after saving. The SSRF_WHITELIST_EXTRA environment variable is still maintained by the deployer and is not overridden here.'

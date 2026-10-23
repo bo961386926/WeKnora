@@ -4658,6 +4658,12 @@ export default {
           default_tenant_mode: 'デフォルトのワークスペース作成方式',
           complex_password_enabled: '複雑なパスワードを必須にする'
         },
+        sso: {
+          enabled: 'SaaS シングルサインオンを有効化',
+          issuer: 'トークン発行者 (iss)',
+          audience: 'トークン対象者 (aud)',
+          clock_skew_seconds: '時刻のずれ（秒）'
+        },
         ssrf: {
           whitelist: 'SSRF保護の許可リスト'
         },
@@ -4688,6 +4694,12 @@ export default {
           registration_mode: '登録モード。公開登録では誰でもアカウントを作成できます。招待登録には有効な招待リンクが必要です。登録禁止でも既存アカウントは招待を承諾できます。保存後すぐに反映されます。',
           default_tenant_mode: '公開登録後のワークスペース作成方式です。create_personalはオーナー権限のワークスペースを作成し、tenantlessはアカウントのみを作成して、ユーザが招待を承諾するかワークスペースを作成するまで待ちます。新規ユーザにのみ適用されます。',
           complex_password_enabled: '複雑なパスワードを必須にするかどうかです。有効にすると、パスワードに大文字・小文字・数字・特殊文字を含める必要があります。変更はすぐに反映され、新規登録ユーザおよび新たなパスワード変更・リセットにのみ適用されます。特殊文字は{specialChars}です'
+        },
+        sso: {
+          enabled: 'SaaS シングルサインオンのマスタースイッチです。有効にすると、SaaS 側が発行した短命トークンを /sso でローカルセッションに交換できます。共有シークレットは環境変数 WEKNORA_SSO_SECRET で指定し、ここでは設定しません。保存後すぐに反映されます。',
+          issuer: 'トークンの発行者（iss）。空欄の場合は発行者を検証しません。SaaS 側と一致させてください。',
+          audience: 'トークンの対象者（aud）。既定値は weknora で、SaaS 側と一致させてください。',
+          clock_skew_seconds: 'トークン検証で許容する時刻のずれ（0〜300 秒）。トークンの有効期間は最大 2 分です。'
         },
         ssrf: {
           whitelist: 'SSRF保護の許可リストです。example.com / *.foo.com / 10.0.0.0/8 / 2001:db8::1のような項目を指定できます。保存後すぐに反映されます。SSRF_WHITELIST_EXTRA環境変数は引き続きデプロイ担当者が管理し、ここでは上書きされません。'

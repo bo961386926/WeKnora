@@ -161,6 +161,40 @@ var registry = map[string]settingSpec{
 		Description: "是否启用复杂密码。开启后密码必须包含大小写字母、数字和特殊字符。" +
 			"修改后立即生效，只影响新注册用户或新密码修改/重置操作。特殊字符包含：!@#$%^&*()_+-=[]{}|;:,.<>?",
 	},
+	// SaaS single sign-on. The shared secret stays in WEKNORA_SSO_SECRET on
+	// the deployment: it is a signing key shared with another system and is
+	// deliberately not stored in (or editable from) the settings table.
+	// Every exchange re-resolves these keys, so edits take effect on the
+	// next login without a restart.
+	"sso.enabled": {
+		Type:     "bool",
+		EnvName:  "WEKNORA_SSO_ENABLED",
+		Default:  false,
+		Category: "auth",
+		Description: "SaaS 单点登录总开关。开启后，SaaS 平台签发的短时令牌可从 /sso 入口换取本地会话；" +
+			"共享密钥由部署环境变量 WEKNORA_SSO_SECRET 提供，不在此处配置。保存后立即生效。",
+	},
+	"sso.issuer": {
+		Type:        "string",
+		EnvName:     "WEKNORA_SSO_ISSUER",
+		Default:     "",
+		Category:    "auth",
+		Description: "令牌的签发方（iss）。留空表示不校验签发方；必须与 SaaS 签发端一致。保存后立即生效。",
+	},
+	"sso.audience": {
+		Type:        "string",
+		EnvName:     "WEKNORA_SSO_AUDIENCE",
+		Default:     "weknora",
+		Category:    "auth",
+		Description: "令牌的受众（aud），默认 weknora，必须与 SaaS 签发端一致。保存后立即生效。",
+	},
+	"sso.clock_skew_seconds": {
+		Type:        "int",
+		EnvName:     "WEKNORA_SSO_CLOCK_SKEW_SECONDS",
+		Default:     int64(30),
+		Category:    "auth",
+		Description: "令牌时间校验允许的时钟偏移（0–300 秒）。令牌有效期上限固定为 2 分钟。保存后立即生效。",
+	},
 	// gallery.policy is the platform-wide image-gallery attribute policy:
 	// a JSON document (types.GalleryPolicyTier) that can toggle attribute
 	// sources and override per-attribute usage flags (in_filter /
@@ -1348,6 +1382,14 @@ func validateRegistryEntry(key string, rawValue any) error {
 			return err
 		}
 		return utils.ValidateSSRFWhitelistEntries(entries)
+	case "sso.clock_skew_seconds":
+		n, err := coerceToPositiveInt64(rawValue)
+		if err != nil {
+			return err
+		}
+		if n < 0 || n > 300 {
+			return errors.New("clock skew must be between 0 and 300 seconds")
+		}
 	}
 	return nil
 }
