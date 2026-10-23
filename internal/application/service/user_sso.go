@@ -239,15 +239,8 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 	}
 
 	if s.memberService != nil {
-		membership, memberErr := s.memberService.GetMembership(ctx, user.ID, claims.TenantID)
-		if memberErr != nil {
+		if memberErr := s.ensureSSOMembership(ctx, user.ID, claims.TenantID, claims.Role); memberErr != nil {
 			return nil, memberErr
-		}
-		if membership == nil {
-			if _, addErr := s.memberService.AddMember(ctx, user.ID, claims.TenantID, claims.Role, nil); addErr != nil {
-				return nil, addErr
-			}
-			logger.Infof(ctx, "[sso] added user %s to workspace %d as %s", user.ID, claims.TenantID, claims.Role)
 		}
 	}
 
@@ -273,4 +266,40 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+// ensureSSOMembership creates the membership on first sight and keeps the
+// role in sync on every later exchange: the SaaS platform is the source of
+// truth for roles. One deliberate exception — a workspace Owner is never
+// demoted through SSO, so the local owner keeps control of the space (the
+// token's role is ignored and a warning is logged).
+func (s *userService) ensureSSOMembership(
+	ctx context.Context, userID string, tenantID uint64, role types.TenantRole,
+) error {
+	membership, err := s.memberService.GetMembership(ctx, userID, tenantID)
+	if err != nil {
+		return err
+	}
+	if membership == nil {
+		if _, addErr := s.memberService.AddMember(ctx, userID, tenantID, role, nil); addErr != nil {
+			return addErr
+		}
+		logger.Infof(ctx, "[sso] added user %s to workspace %d as %s", userID, tenantID, role)
+		return nil
+	}
+	if membership.Role == role {
+		return nil
+	}
+	if membership.Role == types.TenantRoleOwner {
+		logger.Warnf(ctx,
+			"[sso] keeping workspace owner role for user %s in workspace %d (token role %s ignored)",
+			userID, tenantID, role)
+		return nil
+	}
+	if err := s.memberService.UpdateRole(ctx, userID, tenantID, role); err != nil {
+		return err
+	}
+	logger.Infof(ctx, "[sso] synced role for user %s in workspace %d: %s -> %s",
+		userID, tenantID, membership.Role, role)
+	return nil
 }
