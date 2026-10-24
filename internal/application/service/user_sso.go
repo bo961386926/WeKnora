@@ -20,11 +20,12 @@ import (
 
 // SSO errors surfaced by the handler as 401/403/404.
 var (
-	ErrSSODisabled       = errors.New("sso is not enabled")
-	ErrSSOInvalidToken   = errors.New("invalid sso token")
-	ErrSSOTenantNotFound = errors.New("sso target workspace not found")
-	ErrSSOUserDisabled   = errors.New("sso user is disabled")
-	ErrSSORoleNotAllowed = errors.New("sso role is not allowed")
+	ErrSSODisabled        = errors.New("sso is not enabled")
+	ErrSSOInvalidToken    = errors.New("invalid sso token")
+	ErrSSOTenantNotFound  = errors.New("sso target workspace not found")
+	ErrSSOUserDisabled    = errors.New("sso user is disabled")
+	ErrSSORoleNotAllowed  = errors.New("sso role is not allowed")
+	ErrSSOBindingDisabled = errors.New("sso target workspace binding is disabled")
 )
 
 // ssoConfig is resolved on every exchange (DB settings over env) so an
@@ -36,6 +37,10 @@ type ssoConfig struct {
 	Issuer    string
 	Audience  string
 	ClockSkew time.Duration
+	// ExternalSource namespaces the `tenant` claim when it carries an
+	// external reference instead of a numeric workspace id (P1 managed
+	// tenants). Defaults to types.DefaultTenantBindingSource.
+	ExternalSource string
 }
 
 // ssoReplayTTL bounds how long a consumed jti is remembered. It only has to
@@ -60,11 +65,12 @@ func loadSSOConfig(ctx context.Context, settings interfaces.SystemSettingService
 	}
 
 	cfg := &ssoConfig{
-		Enabled:   strings.EqualFold(strings.TrimSpace(os.Getenv("WEKNORA_SSO_ENABLED")), "true"),
-		Secret:    os.Getenv("WEKNORA_SSO_SECRET"),
-		Issuer:    strings.TrimSpace(os.Getenv("WEKNORA_SSO_ISSUER")),
-		Audience:  strings.TrimSpace(os.Getenv("WEKNORA_SSO_AUDIENCE")),
-		ClockSkew: time.Duration(skewSeconds) * time.Second,
+		Enabled:        strings.EqualFold(strings.TrimSpace(os.Getenv("WEKNORA_SSO_ENABLED")), "true"),
+		Secret:         os.Getenv("WEKNORA_SSO_SECRET"),
+		Issuer:         strings.TrimSpace(os.Getenv("WEKNORA_SSO_ISSUER")),
+		Audience:       strings.TrimSpace(os.Getenv("WEKNORA_SSO_AUDIENCE")),
+		ClockSkew:      time.Duration(skewSeconds) * time.Second,
+		ExternalSource: strings.TrimSpace(os.Getenv("WEKNORA_SSO_EXTERNAL_SOURCE")),
 	}
 	if settings != nil {
 		cfg.Enabled = settings.GetBool(ctx, "sso.enabled", "WEKNORA_SSO_ENABLED", cfg.Enabled)
@@ -72,9 +78,13 @@ func loadSSOConfig(ctx context.Context, settings interfaces.SystemSettingService
 		cfg.Audience = strings.TrimSpace(settings.GetString(ctx, "sso.audience", "WEKNORA_SSO_AUDIENCE", cfg.Audience))
 		skewSeconds = settings.GetInt(ctx, "sso.clock_skew_seconds", "WEKNORA_SSO_CLOCK_SKEW_SECONDS", skewSeconds)
 		cfg.ClockSkew = time.Duration(skewSeconds) * time.Second
+		cfg.ExternalSource = strings.TrimSpace(settings.GetString(ctx, "sso.external_source", "WEKNORA_SSO_EXTERNAL_SOURCE", cfg.ExternalSource))
 	}
 	if cfg.Audience == "" {
 		cfg.Audience = "weknora"
+	}
+	if cfg.ExternalSource == "" {
+		cfg.ExternalSource = types.DefaultTenantBindingSource
 	}
 	if !cfg.Enabled {
 		return cfg, nil
@@ -86,12 +96,16 @@ func loadSSOConfig(ctx context.Context, settings interfaces.SystemSettingService
 }
 
 type ssoClaims struct {
-	Subject  string
-	Email    string
-	Name     string
+	Subject string
+	Email   string
+	Name    string
+	// TenantID is set when the `tenant` claim is numeric (legacy contract).
 	TenantID uint64
-	Role     types.TenantRole
-	JTI      string
+	// TenantRef is set when the `tenant` claim is an external reference
+	// resolved through the tenant_bindings table (P1 managed tenants).
+	TenantRef string
+	Role      types.TenantRole
+	JTI       string
 }
 
 // parseSSOToken validates signature, algorithm, audience, issuer and expiry.
@@ -121,8 +135,15 @@ func parseSSOToken(raw string, cfg *ssoConfig) (*ssoClaims, error) {
 	email := claimString(claims, "email")
 	subject := claimString(claims, "sub")
 	jti := claimString(claims, "jti")
-	tenantID, err := claimUint64(claims, "tenant")
-	if email == "" || subject == "" || jti == "" || err != nil || tenantID == 0 {
+	// The `tenant` claim is either the numeric workspace id (legacy
+	// contract) or an external reference resolved through the bindings
+	// table. Exactly one form must be present.
+	tenantID, tenantErr := claimUint64(claims, "tenant")
+	tenantRef := ""
+	if tenantErr != nil {
+		tenantRef = claimString(claims, "tenant")
+	}
+	if email == "" || subject == "" || jti == "" || (tenantID == 0 && tenantRef == "") {
 		return nil, ErrSSOInvalidToken
 	}
 	if exp, err := claims.GetExpirationTime(); err != nil || exp == nil {
@@ -148,12 +169,13 @@ func parseSSOToken(raw string, cfg *ssoConfig) (*ssoClaims, error) {
 	}
 
 	return &ssoClaims{
-		Subject:  subject,
-		Email:    strings.ToLower(strings.TrimSpace(email)),
-		Name:     claimString(claims, "name"),
-		TenantID: tenantID,
-		Role:     role,
-		JTI:      jti,
+		Subject:   subject,
+		Email:     strings.ToLower(strings.TrimSpace(email)),
+		Name:      claimString(claims, "name"),
+		TenantID:  tenantID,
+		TenantRef: tenantRef,
+		Role:      role,
+		JTI:       jti,
 	}, nil
 }
 
@@ -220,7 +242,19 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 		return nil, ErrSSOInvalidToken
 	}
 
-	tenant, err := s.tenantService.GetTenantByID(ctx, claims.TenantID)
+	// Resolve the target workspace: an external reference goes through the
+	// tenant_bindings table (managed tenants); a numeric claim keeps the
+	// legacy direct path.
+	tenantID := claims.TenantID
+	if claims.TenantRef != "" {
+		binding, err := s.resolveTenantBinding(ctx, cfg.ExternalSource, claims.TenantRef)
+		if err != nil {
+			return nil, err
+		}
+		tenantID = binding.TenantID
+	}
+
+	tenant, err := s.tenantService.GetTenantByID(ctx, tenantID)
 	if err != nil || tenant == nil {
 		return nil, ErrSSOTenantNotFound
 	}
@@ -247,26 +281,26 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 		if err != nil {
 			return nil, err
 		}
-		logger.Infof(ctx, "[sso] provisioned user %s for workspace %d", user.ID, claims.TenantID)
+		logger.Infof(ctx, "[sso] provisioned user %s for workspace %d", user.ID, tenantID)
 	}
 	if !user.IsActive {
 		return nil, ErrSSOUserDisabled
 	}
 
 	if s.memberService != nil {
-		if memberErr := s.ensureSSOMembership(ctx, user.ID, claims.TenantID, claims.Role); memberErr != nil {
+		if memberErr := s.ensureSSOMembership(ctx, user.ID, tenantID, claims.Role); memberErr != nil {
 			return nil, memberErr
 		}
 	}
 
-	accessToken, refreshToken, err := s.generateTokensForTenant(ctx, user, claims.TenantID)
+	accessToken, refreshToken, err := s.generateTokensForTenant(ctx, user, tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	if user.Preferences.LastActiveTenantID == nil || *user.Preferences.LastActiveTenantID != claims.TenantID {
-		tenantID := claims.TenantID
-		user.Preferences.LastActiveTenantID = &tenantID
+	if user.Preferences.LastActiveTenantID == nil || *user.Preferences.LastActiveTenantID != tenantID {
+		preferred := tenantID
+		user.Preferences.LastActiveTenantID = &preferred
 		if updateErr := s.userRepo.UpdateUser(ctx, user); updateErr != nil {
 			logger.Warnf(ctx, "[sso] failed to persist last active workspace for %s: %v", user.ID, updateErr)
 		}
@@ -281,6 +315,28 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+// resolveTenantBinding translates an external tenant reference into a
+// workspace id through the tenant_bindings table. Missing and disabled
+// bindings both reject the login; a disabled one gets its own error so the
+// SaaS can distinguish "not yet provisioned" from "suspended".
+func (s *userService) resolveTenantBinding(ctx context.Context, source, ref string) (*types.TenantBinding, error) {
+	if s.bindingRepo == nil {
+		logger.Errorf(ctx, "[sso] external tenant claim %q rejected: binding repository unavailable", ref)
+		return nil, ErrSSOTenantNotFound
+	}
+	binding, err := s.bindingRepo.GetByExternalRef(ctx, source, ref)
+	if err != nil {
+		return nil, err
+	}
+	if binding == nil {
+		return nil, ErrSSOTenantNotFound
+	}
+	if !binding.IsActive() {
+		return nil, ErrSSOBindingDisabled
+	}
+	return binding, nil
 }
 
 // ensureSSOMembership creates the membership on first sight and keeps the

@@ -58,7 +58,8 @@ def sign(secret: str, header: dict, payload: dict) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Mint a WeKnora SSO token")
     parser.add_argument("--email", required=True)
-    parser.add_argument("--tenant", type=int, required=True, help="WeKnora workspace id")
+    parser.add_argument("--tenant", required=True,
+                        help="WeKnora workspace id (numeric) or external tenant reference (any other string)")
     parser.add_argument("--role", default="viewer", choices=["viewer", "contributor", "admin"])
     parser.add_argument("--name", default="")
     parser.add_argument("--subject", default="", help="stable SaaS user id (defaults to email)")
@@ -80,7 +81,7 @@ def main() -> None:
         "sub": args.subject or args.email,
         "email": args.email,
         "name": args.name or args.email.split("@")[0],
-        "tenant": args.tenant,
+        "tenant": int(args.tenant) if args.tenant.isdigit() else args.tenant,
         "role": args.role,
         "jti": str(uuid.uuid4()),
         "iat": now,

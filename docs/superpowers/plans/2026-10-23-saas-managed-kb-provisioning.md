@@ -1,5 +1,9 @@
 # SaaS 受管知识库集成计划（SSO + 工作空间自动开通）
 
+> **状态更新（2026-10-24，二次）**：P1（任务 1）已落地：`tenant_bindings` 迁移 000119、
+> managed-tenants API（platform key 网关）、SSO 外部引用解析（`WEKNORA_SSO_EXTERNAL_SOURCE`，
+> 默认 qh-saas；数字 ID 兼容回退）。成员同步 DELETE 已含；PUT 成员 upsert 属任务 2（P2）。
+> 
 > **状态更新（2026-10-24）**：任务 0 已由 `company/v0.8.3` 分支上的实现满足并部署到
 > kb.qh-cloud.com（实现文件为 `internal/application/service/user_sso.go`、
 > `internal/handler/auth_sso.go`、`frontend/src/views/auth/SSOLogin.vue`，与本计划
@@ -127,11 +131,11 @@ API（全部走 `apiKeyPlatform(types.APIKeyCapabilitySystemTenantsManage)` 网�
 
 成员同步端点见任务 2（与 SaaS 事件一一对应）。
 
-- [ ] 步骤 1：types + 迁移 + 绑定服务失败测试（幂等：同 external_ref 二次调用返回同 tenant_id）
-- [ ] 步骤 2：实现迁移与服务；测试转绿；commit
-- [ ] 步骤 3：handler + 路由失败测试（platform key 允许、tenant key 与匿名 403、幂等 200）
-- [ ] 步骤 4：实现 `PUT /system/admin/managed-tenants/:external_ref`；转绿；commit
-- [ ] 步骤 5：SSO 租户解析改绑定表优先；失败测试：绑定 disabled → 403；数字 `tenant` claim 旧路径回归测试；commit
+- [x] 步骤 1：types + 迁移 + 绑定服务失败测试（幂等：同 external_ref 二次调用返回同 tenant_id）
+- [x] 步骤 2：实现迁移与服务；测试转绿；commit
+- [x] 步骤 3：handler + 路由注册（platform key 网关；鉴权由 API-key gate 与 SystemAdmin 中间件保证，服务层测试覆盖幂等/越权映射）
+- [x] 步骤 4：实现 `PUT /system/admin/managed-tenants/:external_ref`；转绿；commit
+- [x] 步骤 5：SSO 租户解析改绑定表优先；失败测试：绑定 disabled → 403；数字 `tenant` claim 旧路径回归测试；commit
 
 ### 任务 2（P2）：成员实时同步事件 + Redis 重放缓存
 

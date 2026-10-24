@@ -90,7 +90,7 @@ func TestSetUserStatus_NotFound404(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
 	require.NoError(t, db.AutoMigrate(&types.User{}))
-	svc := service.NewUserService(nil, repository.NewUserRepository(db), nil, nil, nil, nil)
+	svc := service.NewUserService(nil, repository.NewUserRepository(db), nil, nil, nil, nil, nil)
 	h := &SystemHandler{userSvc: svc}
 	r := statusRouter(h, "admin-1")
 	body, _ := json.Marshal(map[string]any{"user_id": "ghost", "is_active": true})

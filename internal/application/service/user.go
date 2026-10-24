@@ -104,6 +104,10 @@ type userService struct {
 	memberService    interfaces.TenantMemberService
 	config           *config.Config
 	systemSettingSvc interfaces.SystemSettingService
+	// bindingRepo resolves external tenant references for SSO (managed
+	// tenants). May be nil in narrow test fixtures; external-ref claims are
+	// then rejected instead of panicking.
+	bindingRepo interfaces.TenantBindingRepository
 }
 
 // NewUserService creates a new user service instance
@@ -114,6 +118,7 @@ func NewUserService(
 	tenantService interfaces.TenantService,
 	memberService interfaces.TenantMemberService,
 	systemSettingSvc interfaces.SystemSettingService,
+	bindingRepo interfaces.TenantBindingRepository,
 ) interfaces.UserService {
 	return &userService{
 		userRepo:         userRepo,
@@ -122,6 +127,7 @@ func NewUserService(
 		memberService:    memberService,
 		config:           configInfo,
 		systemSettingSvc: systemSettingSvc,
+		bindingRepo:      bindingRepo,
 	}
 }
 

@@ -285,6 +285,7 @@ func RegisterSystemAdminRoutes(
 	r *gin.RouterGroup,
 	handler *handler.SystemHandler,
 	auditLogHandler *handler.AuditLogHandler,
+	managedTenantHandler *handler.ManagedTenantHandler,
 	g *rbacGuards,
 ) {
 	// Apply SystemAdmin() at the group level — every route below inherits
@@ -308,6 +309,16 @@ func RegisterSystemAdminRoutes(
 		adminRoutes.GET("/api-keys", handler.ListPlatformAPIKeys)
 		adminRoutes.POST("/api-keys", handler.CreatePlatformAPIKey)
 		adminRoutes.DELETE("/api-keys/:key_id", handler.DeletePlatformAPIKey)
+
+		// P1 managed tenants: SaaS-facing idempotent provisioning keyed by a
+		// stable external reference. The platform key is the only intended
+		// caller; system administrators may use the same routes directly.
+		g.apiKeyRoute(adminRoutes, http.MethodPut, "/managed-tenants/:external_ref",
+			apiKeyPlatform(types.APIKeyCapabilitySystemTenantsManage),
+			managedTenantHandler.UpsertManagedTenant)
+		g.apiKeyRoute(adminRoutes, http.MethodDelete, "/managed-tenants/:external_ref/members/:external_user",
+			apiKeyPlatform(types.APIKeyCapabilitySystemTenantsManage),
+			managedTenantHandler.RemoveManagedTenantMember)
 
 		// P1: platform-wide system settings (DB-backed runtime tunables).
 		// Reads return raw model rows / arrays (no `gin.H{"data":...}`
