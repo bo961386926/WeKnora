@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -10,7 +11,6 @@ import (
 	apperrors "github.com/Tencent/WeKnora/internal/errors"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
 )
 
 // ManagedTenantHandler serves the SaaS-facing managed tenant API: idempotent
@@ -18,12 +18,18 @@ import (
 // removal. Authenticated with a platform API key carrying
 // system_tenants_manage; system administrators may also call it directly.
 type ManagedTenantHandler struct {
-	managedSvc interfaces.ManagedTenantService
+	managedSvc *service.ManagedTenantService
 }
 
 // NewManagedTenantHandler wires the handler.
-func NewManagedTenantHandler(managedSvc interfaces.ManagedTenantService) *ManagedTenantHandler {
+func NewManagedTenantHandler(managedSvc *service.ManagedTenantService) *ManagedTenantHandler {
 	return &ManagedTenantHandler{managedSvc: managedSvc}
+}
+
+type upsertManagedMemberRequest struct {
+	Name   string `json:"name"`
+	Role   string `json:"role"`
+	Active *bool  `json:"active"`
 }
 
 type upsertManagedTenantRequest struct {
@@ -81,10 +87,53 @@ func (h *ManagedTenantHandler) RemoveManagedTenantMember(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+// UpsertManagedMember handles
+// PUT /system/admin/managed-tenants/:external_ref/members/:external_user.
+// The external user reference is the account email. Idempotent: unknown
+// emails are provisioned as OIDC-style accounts, role changes are synced and
+// revoke sessions, active=false suspends the membership.
+func (h *ManagedTenantHandler) UpsertManagedMember(c *gin.Context) {
+	var req upsertManagedMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.Error(apperrors.NewValidationError("invalid request body").WithDetails(err.Error()))
+		return
+	}
+	role := types.TenantRole(strings.TrimSpace(req.Role))
+	if role == "" {
+		role = types.TenantRoleViewer
+	}
+	active := req.Active == nil || *req.Active
+
+	user, err := h.managedSvc.UpsertMemberByEmail(
+		c.Request.Context(), types.DefaultTenantBindingSource,
+		c.Param("external_ref"), c.Param("external_user"),
+		types.UpsertMemberRequest{
+			Name:   req.Name,
+			Role:   role,
+			Active: active,
+		})
+	if err != nil {
+		h.mapError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"user_id":  user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"role":     string(role),
+			"active":   active,
+		},
+	})
+}
+
 func (h *ManagedTenantHandler) mapError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrManagedTenantInvalid):
 		c.Error(apperrors.NewValidationError(err.Error()))
+	case errors.Is(err, service.ErrManagedMemberDisabled):
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": err.Error()})
 	case errors.Is(err, service.ErrManagedTenantNotFound), errors.Is(err, service.ErrManagedUserNotFound),
 		errors.Is(err, service.ErrManagedUserNotMember):
 		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
