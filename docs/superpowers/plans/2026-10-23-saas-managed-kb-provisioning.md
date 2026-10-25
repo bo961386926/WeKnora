@@ -152,10 +152,10 @@ API（全部走 `apiKeyPlatform(types.APIKeyCapabilitySystemTenantsManage)` 网�
 - outbox 表 `kb_provision_events(id, aggregate, event_type, payload JSON, status, retry_count, next_retry_at)`；event_type ∈ `tenant.provisioned` / `tenant.disabled` / `tenant.enabled` / `member.upserted` / `member.removed`。
 - 投递 worker：按 `next_retry_at` 指数退避（1m/5m/30m/2h，上限 24h），连续失败告警；payload 附 `event_id` 供 WeKnora 幂等去重（实现者可在 WeKnora 侧按 external_ref+成员键天然幂等，event_id 仅做对账）。
 
-- [ ] 步骤 1：成员端点失败测试（新建用户、角色变更撤销会话、移除撤销会话、owner 角色拒绝）
-- [ ] 步骤 2：实现；转绿；commit `feat(managed): realtime member sync endpoints`
-- [ ] 步骤 3：Redis 重放缓存失败测试（miniredis 已在 go.mod）
-- [ ] 步骤 4：实现并按 `REDIS_ADDR` 有无自动降级内存实现；转绿；commit
+- [x] 步骤 1：成员端点失败测试（新建用户、角色变更撤销会话、移除撤销会话、owner 角色拒绝）
+- [x] 步骤 2：实现；转绿；commit `feat(managed): realtime member sync endpoints`
+- [x] 步骤 3：Redis 重放缓存失败测试（miniredis 已在 go.mod）
+- [x] 步骤 4：实现并按 `REDIS_ADDR` 有无自动降级内存实现；转绿；commit
 - [ ] 步骤 5：SaaS 侧 outbox + worker 与 Java 签发示例（`WEKNORA_SSO_SECRET` 仅环境变量，禁止入库入仓）——在 SaaS 仓库单独排期，本文档仅冻结契约
 
 ### 任务 3（P3）：端到端验证与上线
