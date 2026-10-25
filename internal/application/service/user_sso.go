@@ -43,10 +43,6 @@ type ssoConfig struct {
 	ExternalSource string
 }
 
-// ssoReplayTTL bounds how long a consumed jti is remembered. It only has to
-// outlive the token itself, plus clock skew.
-const ssoReplayTTL = 10 * time.Minute
-
 var (
 	ssoSeenMu sync.Mutex
 	ssoSeen   = map[string]int64{}
@@ -238,7 +234,7 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 	if err != nil {
 		return nil, err
 	}
-	if !consumeJTI(claims.JTI, time.Now()) {
+	if !s.consumeSSOJTI(claims.JTI, time.Now()) {
 		return nil, ErrSSOInvalidToken
 	}
 
@@ -315,6 +311,15 @@ func (s *userService) LoginWithSSO(ctx context.Context, rawToken string) (*types
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+// consumeSSOJTI marks a jti as used: the instance Redis cache when wired at
+// construction, otherwise the shared in-memory cache (single instance).
+func (s *userService) consumeSSOJTI(jti string, now time.Time) bool {
+	if s.replayCache != nil {
+		return s.replayCache.Consume(jti, now)
+	}
+	return consumeJTI(jti, now)
 }
 
 // resolveTenantBinding translates an external tenant reference into a

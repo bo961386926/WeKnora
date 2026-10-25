@@ -18,4 +18,10 @@ type ManagedTenantService interface {
 	// RemoveMemberByEmail removes the email-identified user from the bound
 	// workspace and revokes their sessions.
 	RemoveMemberByEmail(ctx context.Context, source, externalRef, email string) error
+	// UpsertMemberByEmail creates or updates one member of the bound
+	// workspace: unknown emails are provisioned, roles are synced with
+	// session revocation on change, and active=false suspends membership.
+	UpsertMemberByEmail(
+		ctx context.Context, source, externalRef, email string, req types.UpsertMemberRequest,
+	) (*types.User, error)
 }

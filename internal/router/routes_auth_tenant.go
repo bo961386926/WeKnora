@@ -319,6 +319,9 @@ func RegisterSystemAdminRoutes(
 		g.apiKeyRoute(adminRoutes, http.MethodDelete, "/managed-tenants/:external_ref/members/:external_user",
 			apiKeyPlatform(types.APIKeyCapabilitySystemTenantsManage),
 			managedTenantHandler.RemoveManagedTenantMember)
+		g.apiKeyRoute(adminRoutes, http.MethodPut, "/managed-tenants/:external_ref/members/:external_user",
+			apiKeyPlatform(types.APIKeyCapabilitySystemTenantsManage),
+			managedTenantHandler.UpsertManagedMember)
 
 		// P1: platform-wide system settings (DB-backed runtime tunables).
 		// Reads return raw model rows / arrays (no `gin.H{"data":...}`

@@ -108,6 +108,9 @@ type userService struct {
 	// tenants). May be nil in narrow test fixtures; external-ref claims are
 	// then rejected instead of panicking.
 	bindingRepo interfaces.TenantBindingRepository
+	// replayCache deduplicates SSO jti values; nil falls back to the shared
+	// in-memory cache in user_sso.go.
+	replayCache ssoReplayCache
 }
 
 // NewUserService creates a new user service instance
@@ -128,6 +131,7 @@ func NewUserService(
 		config:           configInfo,
 		systemSettingSvc: systemSettingSvc,
 		bindingRepo:      bindingRepo,
+		replayCache:      newSSOReplayCacheFromEnv(),
 	}
 }
 

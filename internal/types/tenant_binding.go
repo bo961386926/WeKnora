@@ -45,3 +45,17 @@ type TenantBinding struct {
 func (b *TenantBinding) IsActive() bool {
 	return b != nil && b.Status == TenantBindingStatusActive
 }
+
+// UpsertMemberRequest is the body of
+// PUT /system/admin/managed-tenants/:external_ref/members/:external_user.
+type UpsertMemberRequest struct {
+	// Name sets/updates the display name and username seed. Empty keeps the
+	// existing values.
+	Name string `json:"name"`
+	// Role must be viewer/contributor/admin; owner is rejected because
+	// workspace ownership stays a local, operator-controlled concept.
+	Role TenantRole `json:"role"`
+	// Active=false suspends the membership and revokes sessions. Defaults
+	// to true when the field is absent (handled by the caller).
+	Active bool `json:"active"`
+}

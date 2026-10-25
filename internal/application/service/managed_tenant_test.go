@@ -95,8 +95,23 @@ func (s *memberServiceStub) key(userID string, tenantID uint64) string {
 	return userID + "@" + strconv.FormatUint(tenantID, 10)
 }
 
+func (s *memberServiceStub) AddMember(_ context.Context, userID string, tenantID uint64, role types.TenantRole, _ *string) (*types.TenantMember, error) {
+	m := &types.TenantMember{UserID: userID, TenantID: tenantID, Role: role, Status: types.TenantMemberStatusActive}
+	s.memberships[s.key(userID, tenantID)] = m
+	return m, nil
+}
+
 func (s *memberServiceStub) GetMembership(_ context.Context, userID string, tenantID uint64) (*types.TenantMember, error) {
 	return s.memberships[s.key(userID, tenantID)], nil
+}
+
+func (s *memberServiceStub) UpdateRole(_ context.Context, _ string, tenantID uint64, role types.TenantRole) error {
+	for _, m := range s.memberships {
+		if m.TenantID == tenantID {
+			m.Role = role
+		}
+	}
+	return nil
 }
 
 func (s *memberServiceStub) RemoveMember(_ context.Context, userID string, tenantID uint64) error {
@@ -111,11 +126,27 @@ func (s *memberServiceStub) RemoveMember(_ context.Context, userID string, tenan
 
 type userRepoStub struct {
 	interfaces.UserRepository
-	users map[string]*types.User // key: email
+	users       map[string]*types.User // key: email
+	updatedUser *types.User
 }
 
 func (s *userRepoStub) GetUserByEmail(_ context.Context, email string) (*types.User, error) {
 	return s.users[strings.ToLower(email)], nil
+}
+
+func (s *userRepoStub) GetUserByUsername(_ context.Context, _ string) (*types.User, error) {
+	return nil, nil
+}
+
+func (s *userRepoStub) UpdateUser(_ context.Context, u *types.User) error {
+	s.updatedUser = u
+	return nil
+}
+
+func (s *userRepoStub) CreateUser(_ context.Context, u *types.User) error {
+	u.ID = "u-" + strconv.Itoa(len(s.users)+1)
+	s.users[strings.ToLower(u.Email)] = u
+	return nil
 }
 
 type tokenRepoStub struct {
