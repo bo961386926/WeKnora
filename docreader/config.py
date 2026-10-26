@@ -80,7 +80,7 @@ def load_config() -> DocReaderConfig:
 
     grpc_max_workers = _get_int(["DOCREADER_GRPC_MAX_WORKERS", "GRPC_MAX_WORKERS"], 4)
     grpc_max_file_size_mb = (
-        _get_int(["DOCREADER_GRPC_MAX_FILE_SIZE_MB", "MAX_FILE_SIZE_MB"], 50)
+        _get_int(["DOCREADER_GRPC_MAX_FILE_SIZE_MB", "MAX_FILE_SIZE_MB"], 200)
         * 1024
         * 1024
     )

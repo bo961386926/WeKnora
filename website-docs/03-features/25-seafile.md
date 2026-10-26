@@ -37,7 +37,7 @@ WeKnora 内的连接测试调用 `/api2/auth/ping/` 验证 Token；资料库和�
 
 格式范围与知识库上传一致（PDF、Office、Markdown、HTML、常见图片、音频等），以 `internal/utils/import_filetypes.go` 为准。图片需要知识库配置 VLM，音频需要配置 ASR；未配置时条目在同步日志中记为入库失败，不影响其他文件。
 
-单文件上限沿用 `MAX_FILE_SIZE_MB`（默认 50 MiB）：目录列表中超限的文件直接记为 `seafile_file_too_large` 且不下载，下载中实际字节数超限同样拒绝，不会截断入库。调大该值时须同步调整 DocReader 的 `DOCREADER_GRPC_MAX_FILE_SIZE_MB` 并重启 app、docreader、frontend，否则文件能下载但解析阶段被 gRPC 拒绝。
+单文件上限沿用 `MAX_FILE_SIZE_MB`（默认 200 MiB）：目录列表中超限的文件直接记为 `seafile_file_too_large` 且不下载，下载中实际字节数超限同样拒绝，不会截断入库。调大该值时须同步调整 DocReader 的 `DOCREADER_GRPC_MAX_FILE_SIZE_MB` 并重启 app、docreader、frontend，否则文件能下载但解析阶段被 gRPC 拒绝。
 
 ## 同步行为
 

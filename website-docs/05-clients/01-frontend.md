@@ -348,7 +348,7 @@ RAG 流水线的可视化进度（`views/chat/components/RagPipelineProgress.vue
 
 | 名称 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `MAX_FILE_SIZE_MB` | 整数（MB） | `50` | 全站请求体上限与前端上传大小上限 |
+| `MAX_FILE_SIZE_MB` | 整数（MB） | `200` | 全站请求体上限与前端上传大小上限 |
 | `MAX_SKILL_BUNDLE_SIZE_MB` | 整数（MB） | `256` | 只作用于技能 ZIP 上传路由；小于 `MAX_FILE_SIZE_MB` 时抬到该值，最大 512 |
 | `DEFAULT_LOCALE` | 字符串 | 空 | 默认界面语言，仅允许 `zh-CN` / `en-US` / `ru-RU` / `ko-KR` / `ja-JP`，其他值被丢弃 |
 | `APP_HOST` | 字符串 | `app` | 后端主机名 |

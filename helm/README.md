@@ -234,7 +234,7 @@ pre-existing Service name does not automatically transfer its ownership to Helm.
 |-----------|-------------|---------|
 | `global.storageClass` | Storage class for PVCs | `""` |
 | `global.imagePullSecrets` | Image pull secrets | `[]` |
-| `global.maxFileSizeMB` | Maximum upload size in MB (frontend, app, docreader) | `50` |
+| `global.maxFileSizeMB` | Maximum upload size in MB (frontend, app, docreader). Raise docreader/app memory limits along with it. | `200` |
 | `global.podSecurityContext` | Pod security context | See values.yaml |
 | `global.containerSecurityContext` | Container security context | See values.yaml |
 

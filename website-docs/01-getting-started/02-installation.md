@@ -213,7 +213,7 @@ redis:
 dataFiles:
   persistence: { enabled: true, size: 10Gi }
 global:
-  maxFileSizeMB: 50                 # 上传大小上限，同时作用于 frontend / app / docreader
+  maxFileSizeMB: 200                # 上传大小上限，同时作用于 frontend / app / docreader
 secrets:                            # 必填项，或用 existingSecret 引用已有 Secret
   dbPassword: ""
   redisPassword: ""

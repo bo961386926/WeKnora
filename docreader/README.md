@@ -59,13 +59,16 @@ docreader:
 
 #### 4. MAX_FILE_SIZE_MB
 
-- **说明**: 允许上传的最大文件大小（单位：MB）
-- **默认值**: `50` MB
+- **说明**: 允许上传的最大文件大小（单位：MB），同时决定 gRPC 单条消息上限
+- **默认值**: `50` MB；本仓库的部署模板（`.env.example` / helm）已统一调到 `200` MB
 - **用途**: 限制 gRPC 服务接收的文件大小，防止过大的文件导致服务崩溃或性能问题
+- **内存要求**: 每个解析 worker 峰值约为文件的 2～3 倍。默认 `DOCREADER_GRPC_MAX_WORKERS=4` 时，200MB 上限需要约 4GB 内存；内存不够就同时调小 worker 数
 - **配置示例**:
   ```bash
   # .env 文件
-  MAX_FILE_SIZE_MB=100  # 允许最大 100MB 的文件
+  MAX_FILE_SIZE_MB=200
+  # 内存紧张时按比例下调
+  DOCREADER_GRPC_MAX_WORKERS=2
   ```
 
 ## 其他可配置的环境变量
@@ -199,7 +202,7 @@ docreader:
 
 ### 3. 文件上传失败？
 
-检查 `MAX_FILE_SIZE_MB` 配置，确保限制足够大。同时需要确保前端和后端服务的文件大小限制保持一致。
+检查 `MAX_FILE_SIZE_MB` 配置，确保限制足够大。同时需要确保前端和后端服务的文件大小限制保持一致。文件变大后还要确认 docreader 容器内存足够（每 worker 约为文件的 2～3 倍），否则会表现为解析中途进程被 OOM kill。
 
 ## 服务健康检查
 

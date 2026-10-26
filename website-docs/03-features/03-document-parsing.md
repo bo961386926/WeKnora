@@ -348,7 +348,7 @@ gRPC 响应中不再返回 chunks（`ReadResponse` 没有 chunk 字段）；`Exc
 | 环境变量（别名） | 默认值 | 说明 |
 | --- | --- | --- |
 | `DOCREADER_GRPC_MAX_WORKERS`（`GRPC_MAX_WORKERS`） | 4 | gRPC 线程池并发数 |
-| `DOCREADER_GRPC_MAX_FILE_SIZE_MB`（`MAX_FILE_SIZE_MB`） | 50（MB） | gRPC 收发消息上限（换算为字节） |
+| `DOCREADER_GRPC_MAX_FILE_SIZE_MB`（`MAX_FILE_SIZE_MB`） | 200（MB） | gRPC 收发消息上限（换算为字节） |
 | `DOCREADER_GRPC_PORT`（`PORT`） | 50051 | gRPC 监听端口 |
 | `DOCREADER_DOCX_MAX_PAGES` | 0（不限） | DOCX 最大处理页数 |
 | `DOCREADER_MARKITDOWN_MAX_WORKERS` | 1 | MarkItDown 并发限流（≤0 关闭限流） |

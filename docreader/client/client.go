@@ -17,7 +17,7 @@ func getMaxMessageSize() int {
 			return size * 1024 * 1024
 		}
 	}
-	return 50 * 1024 * 1024
+	return 200 * 1024 * 1024
 }
 
 var Logger = log.New(os.Stdout, "[DocReader] ", log.LstdFlags|log.Lmicroseconds)

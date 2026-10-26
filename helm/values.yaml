@@ -23,7 +23,12 @@ global:
   # -- Maximum upload size in MB, applied to the frontend (nginx
   # client_max_body_size), the app (upload limit) and docreader (gRPC message
   # limit). Same knob as MAX_FILE_SIZE_MB in docker-compose.yml.
-  maxFileSizeMB: 50
+  # Sizing: docreader peaks at roughly 2-3x the file size per parse worker
+  # (4 by default) and the app holds one full copy per in-flight docreader
+  # call (core concurrency 8 by default). 200MB therefore wants ~4Gi for
+  # docreader and ~2Gi for the app; lower DOCREADER_GRPC_MAX_WORKERS /
+  # WEKNORA_ASYNQ_CORE_CONCURRENCY when memory is tight.
+  maxFileSizeMB: 200
 
   # -- Default security context for all pods
   # Note: Official images (nginx, postgres, redis) run as root by default
@@ -80,13 +85,16 @@ app:
 
   # -- Resource requests and limits
   # Ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  # limits.memory must cover one full file copy per in-flight docreader call
+  # (core concurrency 8 by default) — 2Gi fits the 200MB default in
+  # global.maxFileSizeMB; raise it together with the upload limit.
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 512Mi
     limits:
       cpu: "1"
-      memory: 1Gi
+      memory: 2Gi
 
   # -- Pod security context override
   podSecurityContext: {}
@@ -224,13 +232,16 @@ docreader:
     pullPolicy: IfNotPresent
 
   # -- Resource requests and limits
+  # limits.memory must cover DOCREADER_GRPC_MAX_WORKERS concurrent parses, each
+  # peaking at roughly 2-3x global.maxFileSizeMB. The 200MB default wants ~4Gi;
+  # the previous 512Mi could not survive a single OCR-heavy 50MB scan.
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 1Gi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: "2"
+      memory: 4Gi
 
   # -- Container security context
   securityContext:

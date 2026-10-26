@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	defaultMaxFileSizeMB        = 50
+	defaultMaxFileSizeMB        = 200
 	defaultMaxSkillBundleSizeMB = 256
 	// maxSkillBundleSizeMBCeiling matches the install-time uncompressed
 	// archive cap: a download larger than that cannot become a valid skill.
