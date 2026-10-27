@@ -8,6 +8,7 @@ declare global {
     __RUNTIME_CONFIG__?: {
       MAX_FILE_SIZE_MB?: number;
       MAX_SKILL_BUNDLE_SIZE_MB?: number;
+      ENRICHMENT_ENABLED?: boolean | string;
       DEFAULT_LOCALE?: string;
     };
   }
@@ -22,7 +23,7 @@ function positiveMegabytes(value: unknown, fallback: number): number {
 // 优先级：运行时配置 > 构建时环境变量 > 默认值 50MB
 export const MAX_FILE_SIZE_MB = positiveMegabytes(
   window.__RUNTIME_CONFIG__?.MAX_FILE_SIZE_MB ?? import.meta.env.VITE_MAX_FILE_SIZE_MB,
-  50,
+  200,
 )
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
@@ -40,6 +41,16 @@ export const MAX_SKILL_BUNDLE_SIZE_MB = Math.min(
   ),
 )
 export const MAX_SKILL_BUNDLE_SIZE_BYTES = MAX_SKILL_BUNDLE_SIZE_MB * 1024 * 1024
+
+// Deployment-wide switch for LLM-heavy enrichment (summary, question
+// generation, graph, auto-tagging, wiki, multimodal). Off unless the server
+// sets WEKNORA_ENRICHMENT_ENABLED; the UI entries are hidden while off.
+export const ENRICHMENT_ENABLED = (() => {
+  const raw = window.__RUNTIME_CONFIG__?.ENRICHMENT_ENABLED ?? import.meta.env.VITE_ENRICHMENT_ENABLED
+  if (typeof raw === 'boolean') return raw
+  const v = String(raw ?? '').trim().toLowerCase()
+  return v === 'true' || v === '1' || v === 'yes'
+})()
 
 export function generateRandomString(length: number) {
   let result = "";

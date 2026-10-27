@@ -30,6 +30,14 @@ global:
   # WEKNORA_ASYNQ_CORE_CONCURRENCY when memory is tight.
   maxFileSizeMB: 200
 
+  # -- Deployment-wide switch for LLM-heavy enrichment: document summary,
+  # question generation, knowledge-graph extraction, auto-tagging, wiki
+  # generation and multimodal (VLM) image description. Off by default so a
+  # plain upload costs only parsing + embedding. Same knob as
+  # WEKNORA_ENRICHMENT_ENABLED in docker-compose.yml. Even when on, only a
+  # system administrator can enable a pipeline per knowledge base.
+  enrichmentEnabled: false
+
   # -- Default security context for all pods
   # Note: Official images (nginx, postgres, redis) run as root by default
   # Enable runAsNonRoot only if using non-root compatible images

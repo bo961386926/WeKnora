@@ -159,7 +159,7 @@ func (s *KnowledgeAutoTagService) Handle(ctx context.Context, task *asynq.Task) 
 		return err
 	}
 	config := kb.AutoTagConfig
-	if config == nil || !config.Enabled {
+	if !types.EnrichmentEnabled() || config == nil || !config.Enabled {
 		return skip("auto_tag_disabled", nil)
 	}
 	config.Normalize()

@@ -1521,7 +1521,7 @@ func (s *knowledgeService) enqueueMovedKnowledge(
 		enableMultimodel := targetKB.IsMultimodalEnabled()
 		enableQuestionGeneration := false
 		questionCount := 3
-		if targetKB.QuestionGenerationConfig != nil && targetKB.QuestionGenerationConfig.Enabled {
+		if types.EnrichmentEnabled() && targetKB.QuestionGenerationConfig != nil && targetKB.QuestionGenerationConfig.Enabled {
 			enableQuestionGeneration = true
 			if targetKB.QuestionGenerationConfig.QuestionCount > 0 {
 				questionCount = targetKB.QuestionGenerationConfig.QuestionCount

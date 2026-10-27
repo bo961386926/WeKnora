@@ -186,7 +186,7 @@ func (s *knowledgeService) processDocumentFromPassage(ctx context.Context,
 	}
 	// Process and store chunks
 	var opts ProcessChunksOptions
-	if kb.QuestionGenerationConfig != nil && kb.QuestionGenerationConfig.Enabled {
+	if types.EnrichmentEnabled() && kb.QuestionGenerationConfig != nil && kb.QuestionGenerationConfig.Enabled {
 		opts.EnableQuestionGeneration = true
 		opts.QuestionCount = kb.QuestionGenerationConfig.QuestionCount
 		if opts.QuestionCount <= 0 {
@@ -1370,6 +1370,10 @@ func (s *knowledgeService) ProcessSummaryGeneration(ctx context.Context, t *asyn
 		return nil // Don't retry on unmarshal error
 	}
 	logger.Infof(ctx, "Processing summary generation for knowledge: %s", payload.KnowledgeID)
+	if !types.EnrichmentEnabled() {
+		logger.Infof(ctx, "Enrichment disabled; skipping summary generation for knowledge: %s", payload.KnowledgeID)
+		return nil
+	}
 
 	// Set tenant and language context
 	ctx = context.WithValue(ctx, types.TenantIDContextKey, payload.TenantID)
@@ -1763,7 +1767,15 @@ func (s *knowledgeService) ProcessQuestionGeneration(ctx context.Context, t *asy
 		return nil // Don't retry on unmarshal error
 	}
 	if len(payload.ChunkIDs) > 0 || payload.ChunkID != "" {
+		if !types.EnrichmentEnabled() {
+			logger.Infof(ctx, "Enrichment disabled; skipping question generation for knowledge: %s", payload.KnowledgeID)
+			return nil
+		}
 		return s.processQuestionGenerationForChunks(ctx, t, payload)
+	}
+	if !types.EnrichmentEnabled() {
+		logger.Infof(ctx, "Enrichment disabled; skipping question generation for knowledge: %s", payload.KnowledgeID)
+		return nil
 	}
 	return s.processQuestionGenerationForKnowledge(ctx, t, payload)
 }

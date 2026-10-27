@@ -1,8 +1,10 @@
 package types
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"os"
 	"strings"
 	"time"
 
@@ -869,10 +871,45 @@ func (kb *KnowledgeBase) MarshalJSON() ([]byte, error) {
 // IsWikiEnabled checks if the wiki feature is enabled for this knowledge base.
 // Wiki enablement is the single source of truth on IndexingStrategy.WikiEnabled.
 func (kb *KnowledgeBase) IsWikiEnabled() bool {
-	if kb == nil {
+	if kb == nil || !EnrichmentEnabled() {
 		return false
 	}
 	return kb.IndexingStrategy.WikiEnabled
+}
+
+// EnrichmentEnabled is the deployment-wide master switch for LLM-heavy
+// enrichment (wiki, graph, multimodal VLM, summary, question generation,
+// auto-tagging). Off by default; set WEKNORA_ENRICHMENT_ENABLED=true to
+// re-enable. Per-KB and per-upload flags are ignored while it is off.
+func EnrichmentEnabled() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv("WEKNORA_ENRICHMENT_ENABLED")))
+	return v == "true" || v == "1" || v == "yes"
+}
+
+// EnrichmentWritesAllowed reports whether the caller may turn LLM-heavy
+// enrichment on: the deployment master switch must be on and the caller must
+// be a system administrator. Everyone else writes are forced off.
+func EnrichmentWritesAllowed(ctx context.Context) bool {
+	return EnrichmentEnabled() && IsSystemAdminFromContext(ctx)
+}
+
+// StripEnrichment turns off every LLM-heavy enrichment feature on the KB.
+func (kb *KnowledgeBase) StripEnrichment() {
+	if kb == nil {
+		return
+	}
+	kb.IndexingStrategy.WikiEnabled = false
+	kb.IndexingStrategy.GraphEnabled = false
+	if kb.ExtractConfig != nil {
+		kb.ExtractConfig.Enabled = false
+	}
+	if kb.AutoTagConfig != nil {
+		kb.AutoTagConfig.Enabled = false
+	}
+	if kb.QuestionGenerationConfig != nil {
+		kb.QuestionGenerationConfig.Enabled = false
+	}
+	kb.VLMConfig.Enabled = false
 }
 
 // IsVectorEnabled checks if vector (semantic) search is enabled.
@@ -888,7 +925,7 @@ func (kb *KnowledgeBase) IsKeywordEnabled() bool {
 // IsGraphEnabled checks if knowledge graph extraction is enabled.
 // Requires both the IndexingStrategy flag and a valid ExtractConfig.
 func (kb *KnowledgeBase) IsGraphEnabled() bool {
-	return kb != nil && kb.IndexingStrategy.GraphEnabled &&
+	return kb != nil && EnrichmentEnabled() && kb.IndexingStrategy.GraphEnabled &&
 		kb.ExtractConfig != nil && kb.ExtractConfig.Enabled
 }
 
@@ -900,7 +937,7 @@ func (kb *KnowledgeBase) NeedsEmbeddingModel() bool {
 
 // IsMultimodalEnabled 判断多模态是否启用，由 VLMConfig.IsEnabled() 决定。
 func (kb *KnowledgeBase) IsMultimodalEnabled() bool {
-	if kb == nil {
+	if kb == nil || !EnrichmentEnabled() {
 		return false
 	}
 	return kb.VLMConfig.IsEnabled()

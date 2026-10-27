@@ -115,6 +115,20 @@ func ResolveProcessConfig(kb *types.KnowledgeBase, overrides *types.KnowledgePro
 	// Match KnowledgeBase.IsGraphEnabled: graph fan-out requires extract to be on.
 	eff.GraphEnabled = eff.GraphEnabled && eff.ExtractConfig.Enabled
 
+	return clampEnrichmentToMasterSwitch(eff)
+}
+
+// clampEnrichmentToMasterSwitch forces every LLM-heavy enrichment off while
+// the deployment-wide master switch is closed. It runs last so no per-upload
+// override or caller-supplied flag can re-enable them.
+func clampEnrichmentToMasterSwitch(eff types.EffectiveProcessConfig) types.EffectiveProcessConfig {
+	if types.EnrichmentEnabled() {
+		return eff
+	}
+	eff.SummaryEnabled = false
+	eff.EnableMultimodel = false
+	eff.GraphEnabled = false
+	eff.QuestionGenerationConfig.Enabled = false
 	return eff
 }
 

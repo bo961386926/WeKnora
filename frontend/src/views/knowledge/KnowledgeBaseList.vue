@@ -241,7 +241,7 @@
                         <t-icon name="image" size="14px" />
                       </div>
                     </t-tooltip>
-                    <t-tooltip v-if="kb.question_generation_config?.enabled"
+                    <t-tooltip v-if="ENRICHMENT_ENABLED && kb.question_generation_config?.enabled"
                       :content="$t('knowledgeList.features.questionGeneration')" placement="top">
                       <div class="feature-badge question">
                         <t-icon name="help-circle" size="14px" />
@@ -322,7 +322,7 @@
                         <t-icon name="image" size="14px" />
                       </div>
                     </t-tooltip>
-                    <t-tooltip v-if="kb.question_generation_config?.enabled"
+                    <t-tooltip v-if="ENRICHMENT_ENABLED && kb.question_generation_config?.enabled"
                       :content="$t('knowledgeList.features.questionGeneration')" placement="top">
                       <div class="feature-badge question">
                         <t-icon name="help-circle" size="14px" />
@@ -479,7 +479,7 @@
                         <t-icon name="image" size="14px" />
                       </div>
                     </t-tooltip>
-                    <t-tooltip v-if="kb.question_generation_config?.enabled"
+                    <t-tooltip v-if="ENRICHMENT_ENABLED && kb.question_generation_config?.enabled"
                       :content="$t('knowledgeList.features.questionGeneration')" placement="top">
                       <div class="feature-badge question">
                         <t-icon name="help-circle" size="14px" />
@@ -728,7 +728,7 @@ import ResourceIcon from '@/components/icons/ResourceIcon.vue'
 import { useConfirmDelete } from '@/components/settings/useConfirmDelete'
 import { deleteKnowledgeBase, duplicateKnowledgeBase, togglePinKnowledgeBase } from '@/api/knowledge-base'
 import { useChatResourcesStore } from '@/stores/chatResources'
-import { formatStringDate } from '@/utils/index'
+import { formatStringDate, ENRICHMENT_ENABLED } from '@/utils/index'
 import { useUIStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { useOrganizationStore } from '@/stores/organization'
@@ -1464,6 +1464,7 @@ const isInitialized = (kb: KB) => {
 }
 
 const isWikiKb = (kb: unknown) =>
+  ENRICHMENT_ENABLED &&
   !!(kb as { indexing_strategy?: { wiki_enabled?: boolean } } | null | undefined)?.indexing_strategy?.wiki_enabled
 
 // 计算是否有未初始化的知识库

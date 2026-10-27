@@ -141,6 +141,9 @@ func (s *knowledgeBaseService) CreateKnowledgeBase(ctx context.Context,
 	}
 	kb.EnsureDefaults()
 	applyTenantDefaultStorageProvider(ctx, kb)
+	if !types.EnrichmentWritesAllowed(ctx) {
+		kb.StripEnrichment()
+	}
 	if err := s.applyAndValidateStorageBackend(ctx, kb); err != nil {
 		return nil, err
 	}
@@ -598,6 +601,23 @@ func (s *knowledgeBaseService) UpdateKnowledgeBase(ctx context.Context,
 	// Update the knowledge base properties
 	kb.Name = name
 	kb.Description = description
+	// LLM-heavy enrichment may only be turned on by a system administrator
+	// while the deployment master switch is on. Everyone else's write is
+	// forced off here rather than trusted from the client.
+	if !types.EnrichmentWritesAllowed(ctx) {
+		if config != nil {
+			if config.IndexingStrategy != nil {
+				config.IndexingStrategy.WikiEnabled = false
+				config.IndexingStrategy.GraphEnabled = false
+			}
+			if config.AutoTagConfig != nil {
+				config.AutoTagConfig.Enabled = false
+			}
+		}
+		if vlmConfig != nil {
+			vlmConfig.Enabled = false
+		}
+	}
 	if config != nil {
 		kb.ChunkingConfig = config.ChunkingConfig
 		// Replaced only when the request carried one, so a caller that does not

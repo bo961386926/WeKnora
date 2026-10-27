@@ -150,6 +150,7 @@ flowchart LR
 | `WEKNORA_TRUSTED_PROXIES` | 空 | gin 信任代理 CIDR（逗号分隔） |
 | `MAX_SKILL_BUNDLE_SIZE_MB` | 256 MiB（默认不小于 MAX_FILE_SIZE_MB，上限 512 MiB） | 技能 ZIP 上传与来源下载上限；反向代理请求体限制也需足够大 |
 | `MAX_FILE_SIZE_MB` | 200 | 上传文件大小限制（app/frontend/docreader 三处共用）；Helm 部署使用 `global.maxFileSizeMB`。调大时同步提高 docreader 内存上限 |
+| `WEKNORA_ENRICHMENT_ENABLED` | false | LLM 增强总开关：文档摘要、问题生成、知识图谱、自动标签、Wiki、图片多模态。关闭时这些流水线一律不触发，只产生解析与向量化成本；前端同时隐藏对应入口。打开后也只有系统管理员能在知识库里逐项开启 |
 | `CONCURRENCY_POOL_SIZE` | 5 | 通用并发池 |
 | `APP_EXTERNAL_URL` / `FRONTEND_BASE_URL` | 空 | IM 渠道图片/文件外链的外部可达 URL / 前端外部 origin |
 | `RESOURCE_URL_MODE` | handle | API 响应里文件引用的默认形式：`handle` 返回内部 `resource://`，`public` 返回可直接加载的限时外链。单次请求可用 `?resource_urls=` 覆盖，详见 [API 总览](../04-api/01-api-overview.md) |

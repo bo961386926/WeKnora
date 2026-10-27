@@ -7,7 +7,7 @@
 
     <div class="settings-group">
       <!-- Question Generation feature (only useful for RAG indexing) -->
-      <template v-if="ragEnabled !== false">
+      <template v-if="ragEnabled !== false && ENRICHMENT_ENABLED">
       <div class="setting-row">
         <div class="setting-info">
           <label>{{ $t('knowledgeEditor.advanced.questionGeneration.label') }}</label>
@@ -59,7 +59,7 @@
       </div>
       </template>
 
-      <div class="setting-row">
+      <div v-if="ENRICHMENT_ENABLED" class="setting-row">
         <div class="setting-info">
           <label>{{ $t('knowledgeEditor.advanced.autoTag.label') }}</label>
           <p class="desc">{{ $t('knowledgeEditor.advanced.autoTag.description') }}</p>
@@ -114,7 +114,7 @@
         </div>
       </div>
 
-      <div class="setting-row">
+      <div v-if="ENRICHMENT_ENABLED" class="setting-row">
         <div class="setting-info">
           <label>{{ $t('knowledgeEditor.advanced.profile.label') }}</label>
           <p class="desc">{{ $t('knowledgeEditor.advanced.profile.description') }}</p>
@@ -124,7 +124,7 @@
         </div>
       </div>
 
-      <div v-if="localProfile.enabled" class="subsection">
+      <div v-if="ENRICHMENT_ENABLED && localProfile.enabled" class="subsection">
         <div class="setting-row setting-row-vertical">
           <div class="setting-info">
             <label>{{ $t('knowledgeEditor.advanced.profile.modelLabel') }}</label>
@@ -180,6 +180,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { ENRICHMENT_ENABLED } from '@/utils'
 import ModelSelector from '@/components/ModelSelector.vue'
 
 interface QuestionGenerationConfig {

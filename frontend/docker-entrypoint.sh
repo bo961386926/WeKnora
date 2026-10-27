@@ -16,10 +16,18 @@ if [ "$SKILL_MB" -gt 512 ] 2>/dev/null; then
   SKILL_MB=512
 fi
 
+# LLM 增强总开关：与后端 WEKNORA_ENRICHMENT_ENABLED 同源，默认关闭。
+# 关闭时前端隐藏摘要/问题生成/图谱/自动标签/Wiki/多模态的入口。
+ENRICHMENT_ENABLED=false
+case "$(printf '%s' "${WEKNORA_ENRICHMENT_ENABLED:-}" | tr '[:upper:]' '[:lower:]')" in
+  true|1|yes) ENRICHMENT_ENABLED=true ;;
+esac
+
 cat > /usr/share/nginx/html/config.js << EOF
 window.__RUNTIME_CONFIG__ = {
   MAX_FILE_SIZE_MB: ${FILE_MB},
   MAX_SKILL_BUNDLE_SIZE_MB: ${SKILL_MB},
+  ENRICHMENT_ENABLED: ${ENRICHMENT_ENABLED},
   DEFAULT_LOCALE: "${RUNTIME_DEFAULT_LOCALE}"
 };
 EOF

@@ -121,6 +121,9 @@ func requestKnowledgeBaseProfileRefresh(
 	kb *types.KnowledgeBase,
 	force bool,
 ) error {
+	if !types.EnrichmentEnabled() {
+		return nil
+	}
 	if enqueuer == nil || !knowledgeBaseProfileEligible(kb) {
 		return nil
 	}

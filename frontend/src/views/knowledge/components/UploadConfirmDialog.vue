@@ -351,7 +351,7 @@
                     </div>
                   </div>
 
-                  <div v-show="activeSection === 'multimodal'" class="section" data-section="multimodal">
+                  <div v-if="ENRICHMENT_ENABLED" v-show="activeSection === 'multimodal'" class="section" data-section="multimodal">
                     <div class="kb-settings-block">
                       <div class="section-header">
                         <h2 class="section-title">{{ t('knowledgeEditor.multimodal.title') }}</h2>
@@ -577,7 +577,7 @@
                     </div>
                   </div>
 
-                  <div v-show="activeSection === 'summary'" class="section" data-section="summary">
+                  <div v-if="ENRICHMENT_ENABLED" v-show="activeSection === 'summary'" class="section" data-section="summary">
                     <div class="kb-settings-block">
                       <div class="section-header">
                         <h2 class="section-title">{{ t('uploadConfirm.documentSummary') }}</h2>
@@ -597,7 +597,7 @@
                     </div>
                   </div>
 
-                  <div v-show="activeSection === 'question'" class="section">
+                  <div v-if="ENRICHMENT_ENABLED" v-show="activeSection === 'question'" class="section">
                     <div class="kb-settings-block">
                       <div class="section-header">
                         <h2 class="section-title">{{ t('knowledgeEditor.advanced.questionGeneration.label') }}</h2>
@@ -640,7 +640,7 @@
                     </div>
                   </div>
 
-                  <div v-if="isGraphSectionAvailable" v-show="activeSection === 'graph'" class="section">
+                  <div v-if="ENRICHMENT_ENABLED && isGraphSectionAvailable" v-show="activeSection === 'graph'" class="section">
                     <GraphSettings
                       :graph-extract="uiState.nodeExtractConfig"
                       :model-id="llmModelId"
@@ -677,6 +677,7 @@ import { useChatResourcesStore } from '@/stores/chatResources'
 import { useEditorResourcesStore } from '@/stores/editorResources'
 import { useUIStore } from '@/stores/ui'
 import { formatFileSize, getFileIcon } from '@/utils/files'
+import { ENRICHMENT_ENABLED } from '@/utils'
 import { getUploadFileKey } from '../utils/uploadSources'
 import { listKnowledgeTags, mergeImageActions, fetchImageAttrSchema, FALLBACK_IMAGE_ATTR_SCHEMA, type ImageActionsConfig, type ImageAttrSchema } from '@/api/knowledge-base'
 import { imageAttrDisplay, imageAttrConditionDisplay } from '@/utils/imageAttrDisplay'
@@ -1079,22 +1080,26 @@ const navItems = computed(() => {
   }
   push('parser', 'file-search', t('settings.parserEngine'))
   push('chunking', 'file-copy', t('knowledgeEditor.sidebar.chunking'))
-  push(
-    'multimodal',
-    'image',
-    t('knowledgeEditor.sidebar.multimodal'),
-    issueSectionKeys.value.has('multimodal'),
-  )
+  if (ENRICHMENT_ENABLED) {
+    push(
+      'multimodal',
+      'image',
+      t('knowledgeEditor.sidebar.multimodal'),
+      issueSectionKeys.value.has('multimodal'),
+    )
+  }
   push(
     'asr',
     'sound',
     t('knowledgeEditor.sidebar.asr'),
     issueSectionKeys.value.has('asr'),
   )
-  push('summary', 'file', t('uploadConfirm.documentSummary'))
-  push('question', 'chat', t('knowledgeEditor.advanced.questionGeneration.label'))
-  if (isGraphSectionAvailable.value) {
-    push('graph', 'chart-bubble', t('knowledgeEditor.sidebar.graph'))
+  if (ENRICHMENT_ENABLED) {
+    push('summary', 'file', t('uploadConfirm.documentSummary'))
+    push('question', 'chat', t('knowledgeEditor.advanced.questionGeneration.label'))
+    if (isGraphSectionAvailable.value) {
+      push('graph', 'chart-bubble', t('knowledgeEditor.sidebar.graph'))
+    }
   }
   return items
 })
@@ -1216,7 +1221,7 @@ function goToSection(key: ConfigSectionKey) {
 
 function createDefaultUIState(): UploadUIState {
   return {
-    summaryEnabled: true,
+    summaryEnabled: ENRICHMENT_ENABLED,
     chunkingConfig: {
       chunkSize: 512,
       chunkOverlap: 80,
@@ -1235,7 +1240,7 @@ function createDefaultUIState(): UploadUIState {
     imageVectorEnabled: false,
     imageActions: mergeImageActions(),
     asrConfig: { enabled: false, modelId: '', language: '' },
-    questionGenerationConfig: { enabled: true, questionCount: 3, customInstructions: '' },
+    questionGenerationConfig: { enabled: ENRICHMENT_ENABLED, questionCount: 3, customInstructions: '' },
     nodeExtractConfig: {
       enabled: false,
       text: '',
@@ -1256,7 +1261,7 @@ function initFromKbInfo(kb: any) {
   }
 
   uiState.value = {
-    summaryEnabled: true,
+    summaryEnabled: ENRICHMENT_ENABLED,
     chunkingConfig: {
       chunkSize: kb.chunking_config?.chunk_size || 512,
       chunkOverlap: kb.chunking_config?.chunk_overlap || 80,
@@ -1271,7 +1276,7 @@ function initFromKbInfo(kb: any) {
       tableMetadataInstructions: kb.chunking_config?.table_metadata_instructions || '',
     },
     multimodalConfig: {
-      enabled: !!kb.vlm_config?.enabled,
+      enabled: ENRICHMENT_ENABLED && !!kb.vlm_config?.enabled,
       vllmModelId: kb.vlm_config?.model_id || '',
       descriptionLanguage: kb.vlm_config?.description_language || '',
       customInstructions: kb.vlm_config?.custom_instructions || '',
@@ -1286,7 +1291,7 @@ function initFromKbInfo(kb: any) {
       language: kb.asr_config?.language || '',
     },
     questionGenerationConfig: {
-      enabled: kb.question_generation_config?.enabled ?? true,
+      enabled: ENRICHMENT_ENABLED && (kb.question_generation_config?.enabled ?? true),
       questionCount: kb.question_generation_config?.question_count || 3,
       customInstructions: kb.question_generation_config?.custom_instructions || '',
     },
@@ -1301,7 +1306,7 @@ function initFromKbInfo(kb: any) {
       relations: kb.extract_config?.relations || [],
       customInstructions: kb.extract_config?.custom_instructions || '',
     },
-    graphEnabled: kb.indexing_strategy?.graph_enabled ?? false,
+    graphEnabled: ENRICHMENT_ENABLED && (kb.indexing_strategy?.graph_enabled ?? false),
     pdfForceScanned: false,
   }
   // 拉取后端属性注册表，驱动属性面板的动态渲染（已有 kbId）。
@@ -1363,6 +1368,19 @@ function buildProcessOverrides(): KnowledgeProcessOverrides {
       relations: state.nodeExtractConfig.relations,
       custom_instructions: state.nodeExtractConfig.customInstructions,
     },
+  }
+
+  // The master switch wins over every per-upload choice: while enrichment is
+  // off the request never turns these pipelines back on.
+  if (!ENRICHMENT_ENABLED) {
+    overrides.summary_enabled = false
+    overrides.enable_multimodel = false
+    overrides.image_attrs_enabled = false
+    overrides.image_vector_enabled = false
+    overrides.graph_enabled = false
+    if (overrides.vlm_config) overrides.vlm_config.enabled = false
+    if (overrides.question_generation_config) overrides.question_generation_config.enabled = false
+    if (overrides.extract_config) overrides.extract_config.enabled = false
   }
 
   if (state.pdfForceScanned) {

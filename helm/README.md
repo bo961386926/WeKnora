@@ -235,6 +235,7 @@ pre-existing Service name does not automatically transfer its ownership to Helm.
 | `global.storageClass` | Storage class for PVCs | `""` |
 | `global.imagePullSecrets` | Image pull secrets | `[]` |
 | `global.maxFileSizeMB` | Maximum upload size in MB (frontend, app, docreader). Raise docreader/app memory limits along with it. | `200` |
+| `global.enrichmentEnabled` | Deployment-wide switch for LLM-heavy enrichment (summary, question generation, graph, auto-tag, wiki, multimodal). Only a system admin may enable a pipeline per KB when this is on. | `false` |
 | `global.podSecurityContext` | Pod security context | See values.yaml |
 | `global.containerSecurityContext` | Container security context | See values.yaml |
 

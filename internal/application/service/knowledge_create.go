@@ -938,7 +938,7 @@ func (s *knowledgeService) createKnowledgeFromPassageInternal(ctx context.Contex
 		// Check question generation config
 		enableQuestionGeneration := false
 		questionCount := 3 // default
-		if kb.QuestionGenerationConfig != nil && kb.QuestionGenerationConfig.Enabled {
+		if types.EnrichmentEnabled() && kb.QuestionGenerationConfig != nil && kb.QuestionGenerationConfig.Enabled {
 			enableQuestionGeneration = true
 			if kb.QuestionGenerationConfig.QuestionCount > 0 {
 				questionCount = kb.QuestionGenerationConfig.QuestionCount

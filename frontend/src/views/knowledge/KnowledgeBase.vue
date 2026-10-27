@@ -12,6 +12,7 @@ import { useUIStore } from '@/stores/ui';
 import { useOrganizationStore } from '@/stores/organization';
 import { useAuthStore } from '@/stores/auth';
 import { permissionCanEditKB, permissionCanManageKB } from '@/utils/kbPermission';
+import { ENRICHMENT_ENABLED } from '@/utils';
 import { useChatResourcesStore } from '@/stores/chatResources';
 import { useEditorResourcesStore } from '@/stores/editorResources';
 import KnowledgeBaseEditorModal from './KnowledgeBaseEditorModal.vue';
@@ -91,7 +92,7 @@ const uploadSourceRef = ref<InstanceType<typeof KbUploadSourceDropdown> | null>(
 const kbLoading = ref(false);
 const docListLoading = ref(true);
 const isFAQ = computed(() => (kbInfo.value?.type || '') === 'faq');
-const isWiki = computed(() => !!kbInfo.value?.indexing_strategy?.wiki_enabled);
+const isWiki = computed(() => ENRICHMENT_ENABLED && !!kbInfo.value?.indexing_strategy?.wiki_enabled);
 const validTabs = ['documents', 'wiki', 'graph', 'gallery'] as const
 type KbTab = typeof validTabs[number]
 const initTab = validTabs.includes(route.query.tab as any) ? (route.query.tab as KbTab) : 'documents'

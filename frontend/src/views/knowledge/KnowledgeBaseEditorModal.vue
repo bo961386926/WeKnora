@@ -58,6 +58,7 @@
                   <p class="indexing-check-desc">{{ $t('knowledgeEditor.indexing.searchDesc') }}</p>
                 </div>
                 <div
+                  v-if="ENRICHMENT_ENABLED"
                   class="indexing-check-item"
                   :class="{ 'is-checked': formData.indexingStrategy.wikiEnabled, 'is-disabled': isIndexingLocked }"
                   @click="toggleWikiIndexing"
@@ -233,7 +234,7 @@
           v-if="formData"
           :config="formData.modelConfig"
           :has-files="hasFiles"
-          :wiki-enabled="formData.indexingStrategy?.wikiEnabled"
+          :wiki-enabled="ENRICHMENT_ENABLED && formData.indexingStrategy?.wikiEnabled"
           :rag-enabled="formData.indexingStrategy?.vectorEnabled || formData.indexingStrategy?.keywordEnabled"
           :all-models="allModels"
           @update:config="handleModelConfigUpdate"
@@ -511,7 +512,7 @@
       </div>
 
       <!-- 知识图谱 -->
-      <div v-if="!isFAQ && currentSection === 'graph'" class="section">
+      <div v-if="!isFAQ && ENRICHMENT_ENABLED && currentSection === 'graph'" class="section">
         <GraphSettings
           v-if="formData"
           :graph-extract="formData.nodeExtractConfig"
@@ -610,6 +611,7 @@ import {
   type KnowledgeBaseProfile,
 } from '@/api/knowledge-base'
 import { buildImageProcessingConfig } from '@/utils/imageProcessingConfig'
+import { ENRICHMENT_ENABLED } from '@/utils'
 import { imageAttrDisplay, imageAttrConditionDisplay } from '@/utils/imageAttrDisplay'
 
 // The image-attribute registry, fetched from the backend (single source of
@@ -806,13 +808,19 @@ const navItems = computed(() => {
   } else {
     items.push(
       { key: 'parser', icon: 'file-search', label: t('settings.parserEngine') },
-      { key: 'multimodal', icon: 'image', label: t('knowledgeEditor.sidebar.multimodal') },
+    )
+    if (ENRICHMENT_ENABLED) {
+      items.push({ key: 'multimodal', icon: 'image', label: t('knowledgeEditor.sidebar.multimodal') })
+    }
+    items.push(
       { key: 'asr', icon: 'sound', label: t('knowledgeEditor.sidebar.asr') },
       { key: 'storage', icon: 'cloud', label: t('knowledgeEditor.sidebar.storage') },
       { key: 'chunking', icon: 'file-copy', label: t('knowledgeEditor.sidebar.chunking') },
-      { key: 'graph', icon: 'chart-bubble', label: t('knowledgeEditor.sidebar.graph') },
-      { key: 'advanced', icon: 'setting', label: t('knowledgeEditor.sidebar.advanced') }
     )
+    if (ENRICHMENT_ENABLED) {
+      items.push({ key: 'graph', icon: 'chart-bubble', label: t('knowledgeEditor.sidebar.graph') })
+    }
+    items.push({ key: 'advanced', icon: 'setting', label: t('knowledgeEditor.sidebar.advanced') })
     if (editorMode.value === 'edit' && activeKbId.value) {
       items.push({ key: 'datasource', icon: 'cloud-download', label: t('knowledgeEditor.sidebar.datasource'), badge: dsCount.value || undefined })
     }
@@ -1133,12 +1141,12 @@ const loadKBData = async (
         customInstructions: kb.extract_config?.custom_instructions || ''
       },
       questionGenerationConfig: {
-        enabled: kb.question_generation_config?.enabled || false,
+        enabled: ENRICHMENT_ENABLED && (kb.question_generation_config?.enabled || false),
         questionCount: kb.question_generation_config?.question_count || 3,
         customInstructions: kb.question_generation_config?.custom_instructions || ''
       },
       autoTagConfig: {
-        enabled: kb.auto_tag_config?.enabled || false,
+        enabled: ENRICHMENT_ENABLED && (kb.auto_tag_config?.enabled || false),
         modelId: kb.auto_tag_config?.model_id || '',
         maxTags: kb.auto_tag_config?.max_tags || 3,
         // Absent on knowledge bases saved before the toggle existed; the
@@ -1165,8 +1173,8 @@ const loadKBData = async (
       indexingStrategy: {
         vectorEnabled: kb.indexing_strategy?.vector_enabled ?? true,
         keywordEnabled: kb.indexing_strategy?.keyword_enabled ?? true,
-        wikiEnabled: kb.indexing_strategy?.wiki_enabled ?? false,
-        graphEnabled: kb.indexing_strategy?.graph_enabled ?? false,
+        wikiEnabled: ENRICHMENT_ENABLED && (kb.indexing_strategy?.wiki_enabled ?? false),
+        graphEnabled: ENRICHMENT_ENABLED && (kb.indexing_strategy?.graph_enabled ?? false),
       },
       // Vector-store binding. vectorStoreId is editor-only state; it
       // is only included in the create request, never the update
@@ -1540,7 +1548,7 @@ const buildSubmitData = () => {
   // extract_config is sent below along with indexing_strategy
 
   // 添加问题生成配置
-  if (formData.value.questionGenerationConfig?.enabled) {
+  if (ENRICHMENT_ENABLED && formData.value.questionGenerationConfig?.enabled) {
     data.question_generation_config = {
       enabled: true,
       question_count: formData.value.questionGenerationConfig.questionCount || 3,
@@ -1555,14 +1563,14 @@ const buildSubmitData = () => {
   }
 
   data.auto_tag_config = {
-    enabled: formData.value.autoTagConfig?.enabled || false,
+    enabled: ENRICHMENT_ENABLED && (formData.value.autoTagConfig?.enabled || false),
     model_id: formData.value.autoTagConfig?.modelId || '',
     max_tags: formData.value.autoTagConfig?.maxTags || 3,
     skip_if_tagged: formData.value.autoTagConfig?.skipIfTagged ?? true
   }
 
   data.profile_config = {
-    enabled: formData.value.profileConfig?.enabled || false,
+    enabled: ENRICHMENT_ENABLED && (formData.value.profileConfig?.enabled || false),
     model_id: formData.value.profileConfig?.modelId || '',
     custom_instructions: formData.value.profileConfig?.customInstructions || ''
   }
@@ -1591,8 +1599,8 @@ const buildSubmitData = () => {
     data.indexing_strategy = {
       vector_enabled: formData.value.indexingStrategy?.vectorEnabled ?? true,
       keyword_enabled: formData.value.indexingStrategy?.keywordEnabled ?? true,
-      wiki_enabled: formData.value.indexingStrategy?.wikiEnabled ?? false,
-      graph_enabled: formData.value.indexingStrategy?.graphEnabled ?? false,
+      wiki_enabled: ENRICHMENT_ENABLED && (formData.value.indexingStrategy?.wikiEnabled ?? false),
+      graph_enabled: ENRICHMENT_ENABLED && (formData.value.indexingStrategy?.graphEnabled ?? false),
     }
   }
 
@@ -1600,7 +1608,7 @@ const buildSubmitData = () => {
   // regardless of whether the graph indexing strategy is currently enabled.
   if (formData.value.nodeExtractConfig) {
     data.extract_config = {
-      enabled: !!formData.value.nodeExtractConfig.enabled,
+      enabled: ENRICHMENT_ENABLED && !!formData.value.nodeExtractConfig.enabled,
       text: formData.value.nodeExtractConfig.text || '',
       tags: formData.value.nodeExtractConfig.tags || [],
       nodes: formData.value.nodeExtractConfig.nodes || [],

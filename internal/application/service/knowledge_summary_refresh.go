@@ -142,6 +142,9 @@ func enqueueSummaryRefresh(
 func (s *knowledgeService) RequestKnowledgeSummaryRefresh(
 	ctx context.Context, knowledgeID string,
 ) error {
+	if !types.EnrichmentEnabled() {
+		return nil
+	}
 	tenantID := types.MustTenantIDFromContext(ctx)
 	knowledge, err := s.repo.GetKnowledgeByID(ctx, tenantID, knowledgeID)
 	if err != nil {

@@ -168,6 +168,9 @@ func enqueueDataTableSummaryIfNeeded(
 	knowledgeID string,
 	fileName, fileType, summaryModelID, embeddingModelID string,
 ) {
+	if !types.EnrichmentEnabled() {
+		return
+	}
 	ft := normalizeFileExtension(fileType)
 	if ft == "" && fileName != "" {
 		ft = getFileType(fileName)

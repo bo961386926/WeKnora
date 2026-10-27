@@ -17,6 +17,8 @@ services:
     environment:
       - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-200}
       - MAX_SKILL_BUNDLE_SIZE_MB=${MAX_SKILL_BUNDLE_SIZE_MB:-256}
+      # LLM 增强总开关（摘要/问题生成/图谱/自动标签/Wiki/多模态），默认关闭
+      - WEKNORA_ENRICHMENT_ENABLED=${WEKNORA_ENRICHMENT_ENABLED:-false}
       - DEFAULT_LOCALE=${DEFAULT_LOCALE:-}
       - APP_HOST=${APP_HOST:-app}
       # APP_BACKEND_PORT: the port NGINX proxies to (default 8080).
@@ -328,6 +330,9 @@ services:
       - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-200}
       # Skill zip / GitHub source download cap (in MB); the GitHub zipball is the whole repo, not the skill subtree
       - MAX_SKILL_BUNDLE_SIZE_MB=${MAX_SKILL_BUNDLE_SIZE_MB:-256}
+      # LLM 增强总开关：摘要/问题生成/图谱/自动标签/Wiki/多模态，默认关闭。
+      # 关闭时上述流水线一律不触发，且仅系统管理员可在开启后按知识库打开。
+      - WEKNORA_ENRICHMENT_ENABLED=${WEKNORA_ENRICHMENT_ENABLED:-false}
       # 文档处理任务总超时（Go duration，默认 2h）
       - WEKNORA_DOCUMENT_PROCESS_TIMEOUT=${WEKNORA_DOCUMENT_PROCESS_TIMEOUT:-}
       # 单次 DocReader RPC 超时（默认 30m，须小于上一项）
